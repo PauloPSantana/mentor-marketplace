@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: mentorhub-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-mentorhub}
+      POSTGRES_USER: ${POSTGRES_USER:-mentorhub}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mentorhub}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - mentorhub_pg:/var/lib/postgresql/data
+
+volumes:
+  mentorhub_pg:

@@ -1,0 +1,14 @@
+---
+description: Regras de segurança
+alwaysApply: true
+---
+
+- Autenticação JWT.
+- Autorização baseada em roles.
+- Mentor não pode editar dados de outro mentor.
+- Mentorado não pode criar produto de mentoria.
+- Admin possui endpoints próprios.
+- Validar todos os inputs.
+- Nunca registrar tokens ou senhas em logs.
+- Aplicar rate limit em login futuramente.
+- Usar BCrypt ou PasswordEncoder seguro.

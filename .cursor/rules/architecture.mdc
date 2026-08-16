@@ -1,0 +1,23 @@
+---
+description: Regras arquiteturais do MentorHub AI
+alwaysApply: true
+---
+
+# MentorHub AI Architecture Rules
+
+- Usar monólito modular.
+- Java 21+ e Spring Boot 3.
+- Separar módulos por domínio.
+- Cada módulo deve ter api, application, domain e infrastructure.
+- Controllers apenas orquestram HTTP.
+- Regras ficam em domain/application.
+- Não expor entidades JPA diretamente na API.
+- Usar DTOs e mapeamento explícito.
+- IDs devem ser UUID.
+- Datas devem usar Instant/OffsetDateTime quando aplicável.
+- Dinheiro deve usar BigDecimal.
+- Toda alteração de schema deve usar Flyway.
+- Testar regras de negócio.
+- Integração com banco deve ter Testcontainers quando possível.
+- Nunca salvar senha em texto puro.
+- Evitar dependências entre módulos que gerem ciclos.

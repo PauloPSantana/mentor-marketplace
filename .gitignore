@@ -1,0 +1,33 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# next
+frontend/.next/
+frontend/out/
+
+# java / maven
+backend/target/
+backend/data/
+backend/.mvn/wrapper/maven-wrapper.jar
+*.class
+*.jar
+*.war
+*.iml
+.idea/
+*.ipr
+*.iws
+
+# env / secrets
+.env
+.env.local
+.env.*.local
+*.pem
+
+# logs / OS
+*.log
+.DS_Store
+Thumbs.db
+
+# testcontainers
+.cache/
