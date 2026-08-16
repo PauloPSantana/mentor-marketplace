@@ -31,3 +31,23 @@ Thumbs.db
 
 # testcontainers
 .cache/
+
+
+# JDK local - não enviar para Git
+oracleJdk-26/
+jdk/
+
+# Maven
+target/
+*.class
+
+# Node
+node_modules/
+dist/
+
+# IDE
+.idea/
+.vscode/
+
+# Ambiente
+.env
