@@ -1,5 +1,6 @@
 package br.com.mentorhub.mentors.domain;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -11,6 +12,8 @@ public interface MentorProfileRepository {
     Optional<MentorProfile> findById(UUID id);
 
     Optional<MentorProfile> findByUserId(UUID userId);
+
+    List<MentorProfile> findByUserIdIn(Collection<UUID> userIds);
 
     boolean existsByUserId(UUID userId);
 

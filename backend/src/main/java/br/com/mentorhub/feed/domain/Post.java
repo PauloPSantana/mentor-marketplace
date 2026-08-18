@@ -8,15 +8,19 @@ import java.util.UUID;
 
 public class Post {
 
+    private static final int MAX_CONTENT_LENGTH = 5000;
+    private static final int MAX_IMAGE_URL_LENGTH = 500;
+
     private final UUID id;
     private final UUID authorUserId;
-    private final String content;
-    private final String imageUrl;
+    private String content;
+    private String imageUrl;
     private final String authorName;
     private final String authorPhotoUrl;
     private final String authorHeadline;
     private final String authorRole;
     private final Instant createdAt;
+    private Instant updatedAt;
 
     private Post(
             UUID id,
@@ -27,17 +31,19 @@ public class Post {
             String authorPhotoUrl,
             String authorHeadline,
             String authorRole,
-            Instant createdAt
+            Instant createdAt,
+            Instant updatedAt
     ) {
         this.id = Objects.requireNonNull(id);
         this.authorUserId = Objects.requireNonNull(authorUserId);
         this.content = requireContent(content);
-        this.imageUrl = imageUrl;
+        this.imageUrl = normalizeImageUrl(imageUrl);
         this.authorName = requireAuthorName(authorName);
-        this.authorPhotoUrl = authorPhotoUrl;
-        this.authorHeadline = authorHeadline;
+        this.authorPhotoUrl = blankToNull(authorPhotoUrl);
+        this.authorHeadline = blankToNull(authorHeadline);
         this.authorRole = Objects.requireNonNull(authorRole);
         this.createdAt = Objects.requireNonNull(createdAt);
+        this.updatedAt = Objects.requireNonNull(updatedAt);
     }
 
     public static Post publish(
@@ -49,6 +55,7 @@ public class Post {
             String authorHeadline,
             String authorRole
     ) {
+        Instant now = Instant.now();
         return new Post(
                 UUID.randomUUID(),
                 authorUserId,
@@ -58,7 +65,8 @@ public class Post {
                 authorPhotoUrl,
                 authorHeadline,
                 authorRole,
-                Instant.now()
+                now,
+                now
         );
     }
 
@@ -71,8 +79,10 @@ public class Post {
             String authorPhotoUrl,
             String authorHeadline,
             String authorRole,
-            Instant createdAt
+            Instant createdAt,
+            Instant updatedAt
     ) {
+        Instant restoredUpdatedAt = updatedAt != null ? updatedAt : createdAt;
         return new Post(
                 id,
                 authorUserId,
@@ -82,8 +92,19 @@ public class Post {
                 authorPhotoUrl,
                 authorHeadline,
                 authorRole,
-                createdAt
+                createdAt,
+                restoredUpdatedAt
         );
+    }
+
+    public void update(String content, String imageUrl) {
+        this.content = requireContent(content);
+        this.imageUrl = normalizeImageUrl(imageUrl);
+        this.updatedAt = Instant.now();
+    }
+
+    public boolean isOwnedBy(UUID userId) {
+        return authorUserId.equals(userId);
     }
 
     private static String requireContent(String content) {
@@ -91,7 +112,7 @@ public class Post {
             throw new BusinessException("INVALID_POST", "O conteúdo da publicação é obrigatório");
         }
         String trimmed = content.trim();
-        if (trimmed.length() > 5000) {
+        if (trimmed.length() > MAX_CONTENT_LENGTH) {
             throw new BusinessException("INVALID_POST", "Conteúdo deve ter no máximo 5000 caracteres");
         }
         return trimmed;
@@ -102,6 +123,21 @@ public class Post {
             throw new BusinessException("INVALID_POST", "Nome do autor é obrigatório");
         }
         return authorName.trim();
+    }
+
+    private static String normalizeImageUrl(String imageUrl) {
+        String normalized = blankToNull(imageUrl);
+        if (normalized != null && normalized.length() > MAX_IMAGE_URL_LENGTH) {
+            throw new BusinessException("INVALID_POST", "URL da imagem deve ter no máximo 500 caracteres");
+        }
+        return normalized;
+    }
+
+    private static String blankToNull(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
     }
 
     public UUID getId() {
@@ -138,5 +174,9 @@ public class Post {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
     }
 }

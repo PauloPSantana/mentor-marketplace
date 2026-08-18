@@ -4,6 +4,8 @@ import br.com.mentorhub.mentors.domain.MentorProfile;
 import br.com.mentorhub.mentors.domain.MentorProfileRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -31,6 +33,16 @@ public class MentorProfileRepositoryImpl implements MentorProfileRepository {
     @Override
     public Optional<MentorProfile> findByUserId(UUID userId) {
         return springDataMentorProfileRepository.findByUserId(userId).map(this::toDomain);
+    }
+
+    @Override
+    public List<MentorProfile> findByUserIdIn(Collection<UUID> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return springDataMentorProfileRepository.findByUserIdIn(userIds).stream()
+                .map(this::toDomain)
+                .toList();
     }
 
     @Override

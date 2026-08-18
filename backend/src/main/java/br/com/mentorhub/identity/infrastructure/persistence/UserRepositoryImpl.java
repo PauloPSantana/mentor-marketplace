@@ -4,6 +4,8 @@ import br.com.mentorhub.identity.domain.User;
 import br.com.mentorhub.identity.domain.UserRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -35,6 +37,14 @@ public class UserRepositoryImpl implements UserRepository {
     @Override
     public boolean existsByEmail(String email) {
         return springDataUserRepository.existsByEmail(email);
+    }
+
+    @Override
+    public List<User> findAllByIds(Collection<UUID> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+        return springDataUserRepository.findAllById(ids).stream().map(this::toDomain).toList();
     }
 
     private UserJpaEntity toEntity(User user) {

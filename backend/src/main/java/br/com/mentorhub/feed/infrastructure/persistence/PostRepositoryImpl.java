@@ -3,9 +3,12 @@ package br.com.mentorhub.feed.infrastructure.persistence;
 import br.com.mentorhub.feed.domain.Post;
 import br.com.mentorhub.feed.domain.PostRepository;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -33,6 +36,28 @@ public class PostRepositoryImpl implements PostRepository {
         return springDataPostRepository.findAllByOrderByCreatedAtDesc(pageable).map(this::toDomain);
     }
 
+    @Override
+    public List<Post> findRecentPosts(int limit) {
+        int safeLimit = Math.max(limit, 1);
+        return springDataPostRepository.findAllByOrderByCreatedAtDesc(PageRequest.of(0, safeLimit))
+                .map(this::toDomain)
+                .getContent();
+    }
+
+    @Override
+    public Page<Post> findByAuthorUserIdInOrderByCreatedAtDesc(Collection<UUID> authorUserIds, Pageable pageable) {
+        if (authorUserIds == null || authorUserIds.isEmpty()) {
+            return Page.empty(pageable);
+        }
+        return springDataPostRepository.findByAuthorUserIdInOrderByCreatedAtDesc(authorUserIds, pageable)
+                .map(this::toDomain);
+    }
+
+    @Override
+    public void deleteById(UUID id) {
+        springDataPostRepository.deleteById(id);
+    }
+
     private PostJpaEntity toEntity(Post post) {
         PostJpaEntity entity = new PostJpaEntity();
         entity.setId(post.getId());
@@ -44,6 +69,7 @@ public class PostRepositoryImpl implements PostRepository {
         entity.setAuthorHeadline(post.getAuthorHeadline());
         entity.setAuthorRole(post.getAuthorRole());
         entity.setCreatedAt(post.getCreatedAt());
+        entity.setUpdatedAt(post.getUpdatedAt());
         return entity;
     }
 
@@ -57,7 +83,8 @@ public class PostRepositoryImpl implements PostRepository {
                 entity.getAuthorPhotoUrl(),
                 entity.getAuthorHeadline(),
                 entity.getAuthorRole(),
-                entity.getCreatedAt()
+                entity.getCreatedAt(),
+                entity.getUpdatedAt()
         );
     }
 }

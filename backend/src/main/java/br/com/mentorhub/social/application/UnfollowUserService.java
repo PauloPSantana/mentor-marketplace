@@ -1,0 +1,36 @@
+package br.com.mentorhub.social.application;
+
+import br.com.mentorhub.shared.exception.NotFoundException;
+import br.com.mentorhub.identity.domain.UserRepository;
+import br.com.mentorhub.social.api.dto.FollowStatusResponse;
+import br.com.mentorhub.social.domain.UserFollowRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.UUID;
+
+@Service
+public class UnfollowUserService {
+
+    private final UserRepository userRepository;
+    private final UserFollowRepository userFollowRepository;
+
+    public UnfollowUserService(UserRepository userRepository, UserFollowRepository userFollowRepository) {
+        this.userRepository = userRepository;
+        this.userFollowRepository = userFollowRepository;
+    }
+
+    @Transactional
+    public FollowStatusResponse execute(UUID followerId, UUID followedId) {
+        userRepository.findById(followedId)
+                .orElseThrow(() -> new NotFoundException("Usuário não encontrado"));
+
+        userFollowRepository.deleteByFollowerIdAndFollowedId(followerId, followedId);
+
+        return new FollowStatusResponse(
+                false,
+                userFollowRepository.countByFollowedId(followedId),
+                userFollowRepository.countByFollowerId(followedId)
+        );
+    }
+}

@@ -11,11 +11,13 @@ import {
   roleLabel,
   type StoredUser
 } from "@/lib/auth";
+import { getUnreadNotificationCount } from "@/lib/notifications";
 
 export function AppHeader() {
   const router = useRouter();
   const [user, setUser] = useState<StoredUser | null>(null);
   const [ready, setReady] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     const sync = () => {
@@ -30,6 +32,38 @@ export function AppHeader() {
       window.removeEventListener("storage", sync);
     };
   }, []);
+
+  useEffect(() => {
+    if (!user) {
+      setUnreadCount(0);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadUnreadCount() {
+      try {
+        const response = await getUnreadNotificationCount();
+        if (!cancelled) {
+          setUnreadCount(response.count);
+        }
+      } catch {
+        if (!cancelled) {
+          setUnreadCount(0);
+        }
+      }
+    }
+
+    void loadUnreadCount();
+    const intervalId = window.setInterval(() => {
+      void loadUnreadCount();
+    }, 60_000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+    };
+  }, [user]);
 
   function logout() {
     clearAuthSession();
@@ -48,8 +82,13 @@ export function AppHeader() {
         </Link>
         <nav style={{ display: "flex", gap: "1rem", alignItems: "center", flexWrap: "wrap" }}>
           <Link href="/mentorias">Mentorias</Link>
+          {user ? <Link href="/feed">Feed</Link> : null}
           {!ready ? null : user ? (
             <>
+              <Link href="/notifications" className="notification-link">
+                🔔 Notificações
+                {unreadCount > 0 ? <span className="notification-badge">{unreadCount}</span> : null}
+              </Link>
               <Link href={dashboardPath(user.role)}>Meu painel</Link>
               <div style={{ display: "flex", alignItems: "center", gap: "0.65rem" }}>
                 <span style={{ fontWeight: 600 }}>{user.name}</span>

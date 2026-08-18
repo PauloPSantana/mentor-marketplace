@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -48,8 +49,10 @@ public class PostLikeRepositoryImpl implements PostLikeRepository {
             return Collections.emptyMap();
         }
         Map<UUID, Long> counts = new HashMap<>();
-        for (Object[] row : springDataPostLikeRepository.countGroupedByPostIds(postIds)) {
-            counts.put((UUID) row[0], (Long) row[1]);
+        for (PostIdCountView row : springDataPostLikeRepository.countGroupedByPostIds(postIds)) {
+            if (row.getPostId() != null) {
+                counts.put(row.getPostId(), row.getCnt() == null ? 0L : row.getCnt());
+            }
         }
         return counts;
     }
@@ -60,6 +63,13 @@ public class PostLikeRepositoryImpl implements PostLikeRepository {
             return Collections.emptySet();
         }
         return springDataPostLikeRepository.findLikedPostIds(userId, postIds);
+    }
+
+    @Override
+    public List<PostLike> findByPostIdOrderByCreatedAtDesc(UUID postId) {
+        return springDataPostLikeRepository.findByPostIdOrderByCreatedAtDesc(postId).stream()
+                .map(this::toDomain)
+                .toList();
     }
 
     private PostLikeJpaEntity toEntity(PostLike like) {
