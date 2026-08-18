@@ -49,6 +49,13 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/register", "/api/v1/auth/login").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/mentors/me").hasRole("MENTOR")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/mentors/me").hasRole("MENTOR")
+                        .requestMatchers("/api/v1/mentors/*/enrollments/**").authenticated()
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/v1/mentorships/as-mentor",
+                                "/api/v1/mentorships/as-mentee",
+                                "/api/v1/mentorships/relationships/**"
+                        ).authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/v1/mentors/**", "/api/v1/mentorships/**").permitAll()
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()

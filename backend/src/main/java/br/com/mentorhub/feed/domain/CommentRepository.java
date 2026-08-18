@@ -17,6 +17,4 @@ public interface CommentRepository {
     long countByPostId(UUID postId);
 
     Map<UUID, Long> countByPostIds(Collection<UUID> postIds);
-
-    void deleteById(UUID id);
 }

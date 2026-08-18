@@ -7,6 +7,7 @@ import br.com.mentorhub.mentors.domain.MentorProfile;
 import br.com.mentorhub.mentors.domain.MentorProfileRepository;
 import br.com.mentorhub.shared.exception.BusinessException;
 import br.com.mentorhub.social.domain.UserFollow;
+import br.com.mentorhub.social.domain.UserBlockRepository;
 import br.com.mentorhub.social.domain.UserFollowRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,6 +40,9 @@ class FollowUserServiceTest {
     private UserFollowRepository userFollowRepository;
 
     @Mock
+    private UserBlockRepository userBlockRepository;
+
+    @Mock
     private ApplicationEventPublisher eventPublisher;
 
     private FollowUserService service;
@@ -49,6 +53,7 @@ class FollowUserServiceTest {
                 userRepository,
                 mentorProfileRepository,
                 userFollowRepository,
+                userBlockRepository,
                 eventPublisher
         );
     }
@@ -65,6 +70,7 @@ class FollowUserServiceTest {
         when(userRepository.findById(mentorUserId)).thenReturn(Optional.of(restore(mentorUser, mentorUserId)));
         when(mentorProfileRepository.findByUserId(mentorUserId)).thenReturn(Optional.of(profile));
         when(userFollowRepository.existsByFollowerIdAndFollowedId(followerId, mentorUserId)).thenReturn(false, true);
+        when(userBlockRepository.existsEitherDirection(followerId, mentorUserId)).thenReturn(false);
         when(userFollowRepository.countByFollowedId(mentorUserId)).thenReturn(1L);
         when(userFollowRepository.countByFollowerId(mentorUserId)).thenReturn(0L);
 
@@ -96,10 +102,47 @@ class FollowUserServiceTest {
         when(userRepository.findById(mentorUserId)).thenReturn(Optional.of(restore(mentorUser, mentorUserId)));
         when(mentorProfileRepository.findByUserId(mentorUserId)).thenReturn(Optional.of(profile));
         when(userFollowRepository.existsByFollowerIdAndFollowedId(followerId, mentorUserId)).thenReturn(true);
+        when(userBlockRepository.existsEitherDirection(followerId, mentorUserId)).thenReturn(false);
 
         assertThrows(BusinessException.class, () -> service.execute(followerId, mentorUserId));
         verify(userFollowRepository, never()).save(any());
         verify(eventPublisher, never()).publishEvent(any());
+    }
+
+    @Test
+    void shouldRejectFollowWhenUsersAreBlocked() {
+        UUID followerId = UUID.randomUUID();
+        UUID mentorUserId = UUID.randomUUID();
+        User follower = User.register("Ana", "ana@email.com", "hash", UserRole.MENTEE);
+        User mentorUser = User.register("Paulo", "paulo@email.com", "hash", UserRole.MENTOR);
+        MentorProfile profile = MentorProfile.create(mentorUserId);
+
+        when(userRepository.findById(followerId)).thenReturn(Optional.of(restore(follower, followerId)));
+        when(userRepository.findById(mentorUserId)).thenReturn(Optional.of(restore(mentorUser, mentorUserId)));
+        when(mentorProfileRepository.findByUserId(mentorUserId)).thenReturn(Optional.of(profile));
+        when(userBlockRepository.existsEitherDirection(followerId, mentorUserId)).thenReturn(true);
+
+        BusinessException error = assertThrows(BusinessException.class, () -> service.execute(followerId, mentorUserId));
+        assertEquals("USER_BLOCKED", error.getCode());
+        verify(userFollowRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldRejectInactiveMentor() {
+        UUID followerId = UUID.randomUUID();
+        UUID mentorUserId = UUID.randomUUID();
+        User follower = User.register("Ana", "ana@email.com", "hash", UserRole.MENTEE);
+        User mentorUser = User.register("Paulo", "paulo@email.com", "hash", UserRole.MENTOR);
+        MentorProfile profile = MentorProfile.create(mentorUserId);
+        profile.update(null, null, null, null, null, null, null, null, null, null, false);
+
+        when(userRepository.findById(followerId)).thenReturn(Optional.of(restore(follower, followerId)));
+        when(userRepository.findById(mentorUserId)).thenReturn(Optional.of(restore(mentorUser, mentorUserId)));
+        when(mentorProfileRepository.findByUserId(mentorUserId)).thenReturn(Optional.of(profile));
+
+        BusinessException error = assertThrows(BusinessException.class, () -> service.execute(followerId, mentorUserId));
+        assertEquals("MENTOR_UNAVAILABLE", error.getCode());
+        verify(userFollowRepository, never()).save(any());
     }
 
     private User restore(User user, UUID id) {

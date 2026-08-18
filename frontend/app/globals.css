@@ -343,6 +343,11 @@ a {
   line-height: 1.45;
 }
 
+.comment-deleted .comment-content {
+  color: #829ab1;
+  font-style: italic;
+}
+
 .comment-actions {
   display: flex;
   gap: 0.65rem;
@@ -438,8 +443,154 @@ a {
   justify-items: start;
 }
 
+.profile-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.follow-list-panel {
+  margin-top: 1.25rem;
+}
+
+.follow-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.follow-list-item {
+  margin: 0;
+}
+
+.follow-list-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-decoration: none;
+  color: inherit;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 0.85rem;
+  background: rgba(255, 255, 255, 0.9);
+}
+
 .mentor-profile-card h1 {
   font-size: 1.35rem;
+}
+
+.enrollment-section {
+  margin: 1.5rem 0 2rem;
+}
+
+.enrollment-section h2,
+.enrollment-card h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.15rem;
+}
+
+.enrollment-card {
+  margin-top: 1.25rem;
+  padding: 1.1rem 1.2rem;
+  border: 1px solid var(--line);
+  border-radius: 0.95rem;
+  background: rgba(255, 255, 255, 0.9);
+  display: grid;
+  gap: 0.6rem;
+}
+
+.enrollment-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.85rem;
+}
+
+.enrollment-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 0.85rem;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.enrollment-title {
+  margin: 0;
+  font-weight: 700;
+}
+
+.enrollment-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.2rem 0.65rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: #e2e8f0;
+}
+
+.status-badge.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-badge.active {
+  background: #ccfbf1;
+  color: #0f766e;
+}
+
+.status-badge.completed {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.status-badge.cancelled {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.status-badge.accepted {
+  background: #ccfbf1;
+  color: #0f766e;
+}
+
+.status-badge.rejected {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.status-badge.expired {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.status-badge.paused {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-badge.scheduled {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.status-badge.no_show {
+  background: #ffedd5;
+  color: #c2410c;
 }
 
 .notification-actions {

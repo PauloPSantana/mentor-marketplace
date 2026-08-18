@@ -37,6 +37,16 @@ public record NotificationResponse(
             case POST_COMMENTED -> actorName + " comentou sua publicação";
             case COMMENT_REPLIED -> actorName + " respondeu seu comentário";
             case USER_FOLLOWED -> actorName + " começou a seguir você";
+            case MENTORSHIP_REQUESTED -> actorName + " solicitou sua mentoria";
+            case MENTORSHIP_ACCEPTED -> actorName + " aceitou sua solicitação de mentoria";
+            case MENTORSHIP_REJECTED -> actorName + " recusou sua solicitação de mentoria";
+            case MENTORSHIP_CANCELLED -> actorName + " cancelou a solicitação de mentoria";
+            case MENTORSHIP_COMPLETED -> actorName + " concluiu a mentoria";
+            case SESSION_CREATED -> actorName + " agendou uma sessão de mentoria";
+            case SESSION_CANCELLED -> actorName + " cancelou uma sessão de mentoria";
+            case SESSION_COMPLETED -> actorName + " concluiu uma sessão de mentoria";
+            case SESSION_NO_SHOW -> actorName + " registrou ausência em uma sessão";
+            case SESSION_REMINDER -> "Você tem uma sessão de mentoria em breve";
         };
     }
 }

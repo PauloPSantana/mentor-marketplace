@@ -31,6 +31,18 @@ export function NotificationList({ items, onRead }: NotificationListProps) {
               <Link className="text-btn" href="/mentorias">
                 Ver mentores
               </Link>
+            ) : item.type === "MENTORSHIP_REQUESTED" || item.type === "MENTORSHIP_CANCELLED" ? (
+              <Link className="text-btn" href="/dashboard/mentor">
+                Ver solicitações
+              </Link>
+            ) : item.type === "MENTORSHIP_ACCEPTED" || item.type === "MENTORSHIP_REJECTED" || item.type === "MENTORSHIP_COMPLETED" ? (
+              <Link className="text-btn" href="/dashboard/mentorado">
+                Ver solicitações
+              </Link>
+            ) : item.type.startsWith("SESSION_") ? (
+              <Link className="text-btn" href="/agenda">
+                Ver agenda
+              </Link>
             ) : null}
             {!item.read ? (
               <button className="text-btn" type="button" onClick={() => void handleRead(item.id, onRead)}>

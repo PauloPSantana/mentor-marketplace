@@ -7,6 +7,7 @@ public record FollowUserResponse(
         UUID userId,
         String name,
         String role,
-        Instant followedAt
+        Instant followedAt,
+        UUID mentorProfileId
 ) {
 }

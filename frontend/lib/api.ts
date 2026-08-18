@@ -18,6 +18,9 @@ export function apiErrorMessage(error: unknown, fallback: string): string {
     if (!error.status) {
       return "Não foi possível conectar à API. Verifique se o backend está rodando em http://localhost:8080.";
     }
+    if (error.message && !error.message.startsWith("API error:")) {
+      return error.message;
+    }
   }
   return fallback;
 }
@@ -46,7 +49,16 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   }
 
   if (!response.ok) {
-    throw new ApiError(`API error: ${response.status}`, response.status);
+    let message = `API error: ${response.status}`;
+    try {
+      const body = (await response.json()) as { message?: string };
+      if (body?.message) {
+        message = body.message;
+      }
+    } catch {
+      // keep generic message
+    }
+    throw new ApiError(message, response.status);
   }
 
   if (response.status === 204) {

@@ -9,6 +9,7 @@ import br.com.mentorhub.mentors.domain.MentorProfileRepository;
 import br.com.mentorhub.shared.exception.BusinessException;
 import br.com.mentorhub.shared.exception.NotFoundException;
 import br.com.mentorhub.social.api.dto.FollowStatusResponse;
+import br.com.mentorhub.social.domain.UserBlockRepository;
 import br.com.mentorhub.social.domain.UserFollow;
 import br.com.mentorhub.social.domain.UserFollowRepository;
 import org.springframework.context.ApplicationEventPublisher;
@@ -23,17 +24,20 @@ public class FollowUserService {
     private final UserRepository userRepository;
     private final MentorProfileRepository mentorProfileRepository;
     private final UserFollowRepository userFollowRepository;
+    private final UserBlockRepository userBlockRepository;
     private final ApplicationEventPublisher eventPublisher;
 
     public FollowUserService(
             UserRepository userRepository,
             MentorProfileRepository mentorProfileRepository,
             UserFollowRepository userFollowRepository,
+            UserBlockRepository userBlockRepository,
             ApplicationEventPublisher eventPublisher
     ) {
         this.userRepository = userRepository;
         this.mentorProfileRepository = mentorProfileRepository;
         this.userFollowRepository = userFollowRepository;
+        this.userBlockRepository = userBlockRepository;
         this.eventPublisher = eventPublisher;
     }
 
@@ -46,6 +50,10 @@ public class FollowUserService {
         User follower = requireActiveUser(followerId);
         User followed = requireFollowableUser(followedId);
 
+        if (userBlockRepository.existsEitherDirection(follower.getId(), followed.getId())) {
+            throw new BusinessException("USER_BLOCKED", "Não é possível seguir este perfil");
+        }
+
         if (userFollowRepository.existsByFollowerIdAndFollowedId(follower.getId(), followed.getId())) {
             throw new BusinessException("ALREADY_FOLLOWING", "Usuário já segue este perfil");
         }
@@ -53,7 +61,7 @@ public class FollowUserService {
         userFollowRepository.save(UserFollow.create(follower.getId(), followed.getId()));
         eventPublisher.publishEvent(new UserFollowedEvent(followed.getId(), follower.getId()));
 
-        return buildStatus(follower.getId(), followed.getId());
+        return FollowStatusFactory.build(userFollowRepository, userBlockRepository, follower.getId(), followed.getId());
     }
 
     private User requireActiveUser(UUID userId) {
@@ -79,13 +87,5 @@ public class FollowUserService {
             }
         }
         return user;
-    }
-
-    private FollowStatusResponse buildStatus(UUID followerId, UUID followedId) {
-        return new FollowStatusResponse(
-                userFollowRepository.existsByFollowerIdAndFollowedId(followerId, followedId),
-                userFollowRepository.countByFollowedId(followedId),
-                userFollowRepository.countByFollowerId(followedId)
-        );
     }
 }

@@ -83,6 +83,7 @@ export function AppHeader() {
         <nav style={{ display: "flex", gap: "1rem", alignItems: "center", flexWrap: "wrap" }}>
           <Link href="/mentorias">Mentorias</Link>
           {user ? <Link href="/feed">Feed</Link> : null}
+          {user ? <Link href="/agenda">Agenda</Link> : null}
           {!ready ? null : user ? (
             <>
               <Link href="/notifications" className="notification-link">

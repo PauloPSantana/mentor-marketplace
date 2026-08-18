@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { CommentForm } from "@/components/feed/CommentForm";
-import { deleteComment, formatRelativeTime, createComment, type Comment } from "@/lib/feed";
+import { deleteComment, formatRelativeTime, createReply, type Comment } from "@/lib/feed";
 import { roleLabel } from "@/lib/auth";
 
 type CommentListProps = {
@@ -23,6 +23,8 @@ type CommentItemProps = {
 function CommentItem({ postId, comment, currentUserId, depth = 0, onChanged }: CommentItemProps) {
   const [replying, setReplying] = useState(false);
   const owned = Boolean(currentUserId && currentUserId === comment.authorUserId);
+  const deleted = comment.status === "DELETED";
+  const canReply = depth === 0 && !deleted;
   const initial = comment.authorName.trim().charAt(0).toUpperCase();
 
   async function onDelete() {
@@ -38,7 +40,7 @@ function CommentItem({ postId, comment, currentUserId, depth = 0, onChanged }: C
   }
 
   return (
-    <div className={`comment-item${depth > 0 ? " comment-reply" : ""}`}>
+    <div className={`comment-item${depth > 0 ? " comment-reply" : ""}${deleted ? " comment-deleted" : ""}`}>
       <div className="comment-header">
         <div className="avatar" aria-hidden="true">
           {initial}
@@ -50,23 +52,27 @@ function CommentItem({ postId, comment, currentUserId, depth = 0, onChanged }: C
             <span className="post-meta">• {formatRelativeTime(comment.createdAt)}</span>
           </div>
           <p className="comment-content">{comment.content}</p>
-          <div className="comment-actions">
-            <button className="text-btn" type="button" onClick={() => setReplying((value) => !value)}>
-              {replying ? "Cancelar" : "Responder"}
-            </button>
-            {owned ? (
-              <button className="text-btn danger" type="button" onClick={onDelete}>
-                Excluir
-              </button>
-            ) : null}
-          </div>
+          {!deleted ? (
+            <div className="comment-actions">
+              {canReply ? (
+                <button className="text-btn" type="button" onClick={() => setReplying((value) => !value)}>
+                  {replying ? "Cancelar" : "Responder"}
+                </button>
+              ) : null}
+              {owned ? (
+                <button className="text-btn danger" type="button" onClick={onDelete}>
+                  Excluir
+                </button>
+              ) : null}
+            </div>
+          ) : null}
           {replying ? (
             <CommentForm
               placeholder="Escreva uma resposta..."
               submitLabel="Responder"
               onCancel={() => setReplying(false)}
               onSubmit={async (content) => {
-                await createComment(postId, content, comment.id);
+                await createReply(postId, comment.id, content);
                 setReplying(false);
                 onChanged();
               }}

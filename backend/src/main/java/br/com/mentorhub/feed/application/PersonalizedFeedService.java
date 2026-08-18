@@ -10,6 +10,7 @@ import br.com.mentorhub.feed.domain.PostLikeRepository;
 import br.com.mentorhub.feed.domain.PostRepository;
 import br.com.mentorhub.mentors.domain.MentorProfile;
 import br.com.mentorhub.mentors.domain.MentorProfileRepository;
+import br.com.mentorhub.social.domain.UserBlockRepository;
 import br.com.mentorhub.social.domain.UserFollowRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -39,6 +40,7 @@ public class PersonalizedFeedService {
     private final PostLikeRepository postLikeRepository;
     private final CommentRepository commentRepository;
     private final UserFollowRepository userFollowRepository;
+    private final UserBlockRepository userBlockRepository;
     private final MentorProfileRepository mentorProfileRepository;
 
     public PersonalizedFeedService(
@@ -46,12 +48,14 @@ public class PersonalizedFeedService {
             PostLikeRepository postLikeRepository,
             CommentRepository commentRepository,
             UserFollowRepository userFollowRepository,
+            UserBlockRepository userBlockRepository,
             MentorProfileRepository mentorProfileRepository
     ) {
         this.postRepository = postRepository;
         this.postLikeRepository = postLikeRepository;
         this.commentRepository = commentRepository;
         this.userFollowRepository = userFollowRepository;
+        this.userBlockRepository = userBlockRepository;
         this.mentorProfileRepository = mentorProfileRepository;
     }
 
@@ -70,7 +74,8 @@ public class PersonalizedFeedService {
     private PersonalizedFeedResponse listRecent(UUID currentUserId, int page, int size, FeedType type) {
         Page<Post> feed = postRepository.findFeed(PageRequest.of(page, size));
         Set<UUID> followedAuthorIds = new HashSet<>(userFollowRepository.findAllFollowedIdsByFollowerId(currentUserId));
-        List<FeedPostResponse> items = toFeedResponses(feed.getContent(), currentUserId, followedAuthorIds, null);
+        List<Post> visiblePosts = excludeBlockedAuthors(feed.getContent(), currentUserId);
+        List<FeedPostResponse> items = toFeedResponses(visiblePosts, currentUserId, followedAuthorIds, null);
         return new PersonalizedFeedResponse(
                 items,
                 feed.getNumber(),
@@ -84,6 +89,8 @@ public class PersonalizedFeedService {
 
     private PersonalizedFeedResponse listFollowing(UUID currentUserId, int page, int size) {
         List<UUID> followedIds = userFollowRepository.findAllFollowedIdsByFollowerId(currentUserId);
+        Set<UUID> blockedIds = userBlockRepository.findRelatedUserIds(currentUserId);
+        followedIds = followedIds.stream().filter(id -> !blockedIds.contains(id)).toList();
         if (followedIds.isEmpty()) {
             return emptyResponse(page, size, FeedType.FOLLOWING);
         }
@@ -112,7 +119,7 @@ public class PersonalizedFeedService {
         Set<String> viewerTechnologies = new LinkedHashSet<>();
         buildViewerInterests(currentUserId, followedIds, viewerSkills, viewerTechnologies);
 
-        List<Post> candidates = postRepository.findRecentPosts(FOR_YOU_CANDIDATE_LIMIT);
+        List<Post> candidates = excludeBlockedAuthors(postRepository.findRecentPosts(FOR_YOU_CANDIDATE_LIMIT), currentUserId);
         if (candidates.isEmpty()) {
             return emptyResponse(page, size, FeedType.FOR_YOU);
         }
@@ -211,6 +218,16 @@ public class PersonalizedFeedService {
                             score
                     );
                 })
+                .toList();
+    }
+
+    private List<Post> excludeBlockedAuthors(List<Post> posts, UUID currentUserId) {
+        Set<UUID> blockedIds = userBlockRepository.findRelatedUserIds(currentUserId);
+        if (blockedIds.isEmpty()) {
+            return posts;
+        }
+        return posts.stream()
+                .filter(post -> !blockedIds.contains(post.getAuthorUserId()))
                 .toList();
     }
 

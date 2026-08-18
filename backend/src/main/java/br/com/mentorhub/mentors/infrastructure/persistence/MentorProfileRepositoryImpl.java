@@ -31,6 +31,16 @@ public class MentorProfileRepositoryImpl implements MentorProfileRepository {
     }
 
     @Override
+    public List<MentorProfile> findByIdIn(Collection<UUID> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return springDataMentorProfileRepository.findAllById(ids).stream()
+                .map(this::toDomain)
+                .toList();
+    }
+
+    @Override
     public Optional<MentorProfile> findByUserId(UUID userId) {
         return springDataMentorProfileRepository.findByUserId(userId).map(this::toDomain);
     }

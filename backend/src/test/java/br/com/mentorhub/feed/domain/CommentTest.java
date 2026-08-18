@@ -7,6 +7,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -33,6 +34,7 @@ class CommentTest {
         assertNull(comment.getParentCommentId());
         assertFalse(comment.isReply());
         assertTrue(comment.isOwnedBy(authorId));
+        assertTrue(comment.isActive());
     }
 
     @Test
@@ -60,5 +62,34 @@ class CommentTest {
                 BusinessException.class,
                 () -> Comment.create(UUID.randomUUID(), null, UUID.randomUUID(), "  ", "Ana", null, null, "MENTEE")
         );
+    }
+
+    @Test
+    void shouldRejectContentLongerThan1000Characters() {
+        String longContent = "a".repeat(1001);
+        assertThrows(
+                BusinessException.class,
+                () -> Comment.create(UUID.randomUUID(), null, UUID.randomUUID(), longContent, "Ana", null, null, "MENTEE")
+        );
+    }
+
+    @Test
+    void shouldSoftDeleteComment() {
+        Comment comment = Comment.create(
+                UUID.randomUUID(),
+                null,
+                UUID.randomUUID(),
+                "Comentário original",
+                "Ana",
+                null,
+                null,
+                "MENTEE"
+        );
+
+        Comment deleted = comment.markAsDeleted();
+
+        assertTrue(deleted.isDeleted());
+        assertEquals(Comment.DELETED_PLACEHOLDER, deleted.getDisplayContent());
+        assertNotNull(deleted.getUpdatedAt());
     }
 }

@@ -3,11 +3,20 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { EnrollmentList, sortEnrollments } from "@/components/enrollments/EnrollmentList";
+import { MentorshipList } from "@/components/mentorships/MentorshipList";
+import { apiErrorMessage } from "@/lib/api";
 import { clearAuthSession, getStoredUser, roleLabel, type StoredUser } from "@/lib/auth";
+import { listSentMentorshipRequests, type Enrollment } from "@/lib/enrollments";
+import { listMentorshipsAsMentee, type MentorshipRelationship } from "@/lib/mentorships";
 
 export default function MentoradoDashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState<StoredUser | null>(null);
+  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+  const [mentorships, setMentorships] = useState<MentorshipRelationship[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const parsed = getStoredUser();
@@ -20,6 +29,13 @@ export default function MentoradoDashboardPage() {
       return;
     }
     setUser(parsed);
+    Promise.all([listSentMentorshipRequests(), listMentorshipsAsMentee()])
+      .then(([items, page]) => {
+        setEnrollments(sortEnrollments(items));
+        setMentorships(page.items);
+      })
+      .catch((err) => setError(apiErrorMessage(err, "Não foi possível carregar suas solicitações.")))
+      .finally(() => setLoading(false));
   }, [router]);
 
   if (!user) {
@@ -32,9 +48,20 @@ export default function MentoradoDashboardPage() {
       <p>
         Olá, {user.name}. <span className="role-badge">{roleLabel(user.role)}</span>
       </p>
-      <p style={{ marginTop: "0.75rem" }}>Em breve: contratações, sessões e progresso.</p>
+      <section className="enrollment-section">
+        <h2>Minhas solicitações</h2>
+        {error ? <p className="error">{error}</p> : null}
+        {loading ? <p className="feed-status">Carregando solicitações...</p> : (
+          <EnrollmentList items={enrollments} perspective="MENTEE" onChange={(items) => setEnrollments(sortEnrollments(items))} />
+        )}
+      </section>
+      <section className="enrollment-section">
+        <h2>Minhas mentorias</h2>
+        <MentorshipList items={mentorships} perspective="MENTEE" />
+      </section>
       <div style={{ display: "flex", gap: "0.75rem", marginTop: "1.5rem" }}>
         <Link href="/feed" className="btn">Ir para o feed</Link>
+        <Link href="/agenda" className="btn secondary">Agenda</Link>
         <Link href="/mentorias" className="btn secondary">Buscar mentorias</Link>
         <button
           className="btn"

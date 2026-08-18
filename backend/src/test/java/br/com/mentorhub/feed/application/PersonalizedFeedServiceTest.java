@@ -6,6 +6,7 @@ import br.com.mentorhub.feed.domain.Post;
 import br.com.mentorhub.feed.domain.PostLikeRepository;
 import br.com.mentorhub.feed.domain.PostRepository;
 import br.com.mentorhub.mentors.domain.MentorProfileRepository;
+import br.com.mentorhub.social.domain.UserBlockRepository;
 import br.com.mentorhub.social.domain.UserFollowRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,6 +45,9 @@ class PersonalizedFeedServiceTest {
     private UserFollowRepository userFollowRepository;
 
     @Mock
+    private UserBlockRepository userBlockRepository;
+
+    @Mock
     private MentorProfileRepository mentorProfileRepository;
 
     private PersonalizedFeedService service;
@@ -55,6 +59,7 @@ class PersonalizedFeedServiceTest {
                 postLikeRepository,
                 commentRepository,
                 userFollowRepository,
+                userBlockRepository,
                 mentorProfileRepository
         );
     }
@@ -63,6 +68,7 @@ class PersonalizedFeedServiceTest {
     void shouldReturnEmptyFollowingFeedWhenUserFollowsNobody() {
         UUID viewerId = UUID.randomUUID();
         when(userFollowRepository.findAllFollowedIdsByFollowerId(viewerId)).thenReturn(List.of());
+        when(userBlockRepository.findRelatedUserIds(viewerId)).thenReturn(Set.of());
 
         var feed = service.execute(viewerId, FeedType.FOLLOWING, 0, 10);
 
@@ -79,6 +85,7 @@ class PersonalizedFeedServiceTest {
         when(postRepository.findFeed(PageRequest.of(0, 10)))
                 .thenReturn(new PageImpl<>(List.of(post), PageRequest.of(0, 10), 1));
         when(userFollowRepository.findAllFollowedIdsByFollowerId(viewerId)).thenReturn(List.of());
+        when(userBlockRepository.findRelatedUserIds(viewerId)).thenReturn(Set.of());
         when(postLikeRepository.countByPostIds(anyCollection())).thenReturn(Map.of(post.getId(), 1L));
         when(postLikeRepository.findLikedPostIds(viewerId, List.of(post.getId()))).thenReturn(Set.of());
         when(commentRepository.countByPostIds(anyCollection())).thenReturn(Map.of(post.getId(), 0L));
@@ -148,6 +155,7 @@ class PersonalizedFeedServiceTest {
         assertTrue(followedScore > otherScore);
 
         doReturn(List.of(followedAuthorId)).when(userFollowRepository).findAllFollowedIdsByFollowerId(viewerId);
+        when(userBlockRepository.findRelatedUserIds(viewerId)).thenReturn(Set.of());
         when(postRepository.findRecentPosts(PersonalizedFeedService.FOR_YOU_CANDIDATE_LIMIT))
                 .thenReturn(List.of(otherPost, followedPost));
         when(mentorProfileRepository.findByUserIdIn(any())).thenReturn(List.of());

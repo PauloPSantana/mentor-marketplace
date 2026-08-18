@@ -75,7 +75,7 @@ export function FollowButton({ userId, compact = false, initialStatus, onChange 
   }, [userId]);
 
   async function onToggle() {
-    if (!status) {
+    if (!status || status.blocked || status.blockedBy) {
       return;
     }
     setLoading(true);
@@ -97,6 +97,14 @@ export function FollowButton({ userId, compact = false, initialStatus, onChange 
 
   if (!status) {
     return error && !compact ? <span className="error">{error}</span> : null;
+  }
+
+  if (status.blockedBy) {
+    return compact ? null : <p className="post-meta">Este usuário bloqueou você.</p>;
+  }
+
+  if (status.blocked) {
+    return compact ? null : <p className="post-meta">Você bloqueou este perfil.</p>;
   }
 
   return (

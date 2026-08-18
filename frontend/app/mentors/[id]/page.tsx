@@ -3,7 +3,10 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { BlockButton } from "@/components/social/BlockButton";
 import { FollowButton } from "@/components/social/FollowButton";
+import { FollowListPanel } from "@/components/social/FollowListPanel";
+import { RequestMentorshipCard } from "@/components/enrollments/RequestMentorshipCard";
 import { apiErrorMessage } from "@/lib/api";
 import { getStoredUser } from "@/lib/auth";
 import { getMentor, type MentorProfile } from "@/lib/mentors";
@@ -65,7 +68,16 @@ export default function MentorProfilePage() {
               {followStatus?.followerCount ?? 0} seguidores • {followStatus?.followingCount ?? 0} seguindo
             </p>
           </div>
-          {!isSelf ? <FollowButton userId={mentor.userId} onChange={setFollowStatus} /> : null}
+          {!isSelf ? (
+            <div className="profile-actions">
+              <FollowButton userId={mentor.userId} onChange={setFollowStatus} />
+              <BlockButton
+                userId={mentor.userId}
+                blocked={Boolean(followStatus?.blocked)}
+                onChange={setFollowStatus}
+              />
+            </div>
+          ) : null}
         </header>
 
         {mentor.bio ? <p className="post-content">{mentor.bio}</p> : null}
@@ -88,6 +100,17 @@ export default function MentorProfilePage() {
           </p>
         ) : null}
       </article>
+      {!isSelf ? (
+        <RequestMentorshipCard
+          mentorId={mentor.id}
+          sessionPrice={mentor.sessionPrice}
+          blocked={Boolean(followStatus?.blocked || followStatus?.blockedBy)}
+        />
+      ) : null}
+      <FollowListPanel
+        key={`${followStatus?.followerCount ?? 0}-${followStatus?.followingCount ?? 0}`}
+        userId={mentor.userId}
+      />
     </main>
   );
 }

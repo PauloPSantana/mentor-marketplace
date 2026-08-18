@@ -1,6 +1,20 @@
 import { api } from "@/lib/api";
 
-export type NotificationType = "POST_LIKED" | "POST_COMMENTED" | "COMMENT_REPLIED" | "USER_FOLLOWED";
+export type NotificationType =
+  | "POST_LIKED"
+  | "POST_COMMENTED"
+  | "COMMENT_REPLIED"
+  | "USER_FOLLOWED"
+  | "MENTORSHIP_REQUESTED"
+  | "MENTORSHIP_ACCEPTED"
+  | "MENTORSHIP_REJECTED"
+  | "MENTORSHIP_CANCELLED"
+  | "MENTORSHIP_COMPLETED"
+  | "SESSION_CREATED"
+  | "SESSION_CANCELLED"
+  | "SESSION_COMPLETED"
+  | "SESSION_NO_SHOW"
+  | "SESSION_REMINDER";
 
 export type Notification = {
   id: string;

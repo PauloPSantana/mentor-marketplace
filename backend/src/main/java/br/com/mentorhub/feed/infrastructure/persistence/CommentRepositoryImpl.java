@@ -2,6 +2,7 @@ package br.com.mentorhub.feed.infrastructure.persistence;
 
 import br.com.mentorhub.feed.domain.Comment;
 import br.com.mentorhub.feed.domain.CommentRepository;
+import br.com.mentorhub.feed.domain.CommentStatus;
 import org.springframework.stereotype.Repository;
 
 import java.util.Collection;
@@ -40,7 +41,7 @@ public class CommentRepositoryImpl implements CommentRepository {
 
     @Override
     public long countByPostId(UUID postId) {
-        return springDataCommentRepository.countByPostId(postId);
+        return springDataCommentRepository.countByPostIdAndStatus(postId, CommentStatus.ACTIVE);
     }
 
     @Override
@@ -49,17 +50,12 @@ public class CommentRepositoryImpl implements CommentRepository {
             return Collections.emptyMap();
         }
         Map<UUID, Long> counts = new HashMap<>();
-        for (PostIdCountView row : springDataCommentRepository.countGroupedByPostIds(postIds)) {
+        for (PostIdCountView row : springDataCommentRepository.countGroupedByPostIds(postIds, CommentStatus.ACTIVE)) {
             if (row.getPostId() != null) {
                 counts.put(row.getPostId(), row.getCnt() == null ? 0L : row.getCnt());
             }
         }
         return counts;
-    }
-
-    @Override
-    public void deleteById(UUID id) {
-        springDataCommentRepository.deleteById(id);
     }
 
     private CommentJpaEntity toEntity(Comment comment) {
@@ -73,7 +69,9 @@ public class CommentRepositoryImpl implements CommentRepository {
         entity.setAuthorPhotoUrl(comment.getAuthorPhotoUrl());
         entity.setAuthorHeadline(comment.getAuthorHeadline());
         entity.setAuthorRole(comment.getAuthorRole());
+        entity.setStatus(comment.getStatus());
         entity.setCreatedAt(comment.getCreatedAt());
+        entity.setUpdatedAt(comment.getUpdatedAt());
         return entity;
     }
 
@@ -88,7 +86,9 @@ public class CommentRepositoryImpl implements CommentRepository {
                 entity.getAuthorPhotoUrl(),
                 entity.getAuthorHeadline(),
                 entity.getAuthorRole(),
-                entity.getCreatedAt()
+                entity.getStatus(),
+                entity.getCreatedAt(),
+                entity.getUpdatedAt()
         );
     }
 }

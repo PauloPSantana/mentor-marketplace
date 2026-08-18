@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { FollowButton } from "@/components/social/FollowButton";
 import { apiErrorMessage } from "@/lib/api";
 import { getStoredUser } from "@/lib/auth";
 import { listMentors, type MentorProfile } from "@/lib/mentors";
@@ -45,9 +46,14 @@ export default function MentoriasPage() {
                       <p className="post-meta">{mentor.technologies.slice(0, 4).join(" • ")}</p>
                     ) : null}
                   </div>
-                  <Link className="btn secondary" href={`/mentors/${mentor.id}`}>
-                    Ver perfil
-                  </Link>
+                  <div className="profile-actions">
+                    <Link className="btn secondary" href={`/mentors/${mentor.id}`}>
+                      Ver perfil
+                    </Link>
+                    {mentor.userId !== getStoredUser()?.id ? (
+                      <FollowButton userId={mentor.userId} compact />
+                    ) : null}
+                  </div>
                 </header>
               </article>
             );

@@ -3,8 +3,12 @@
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { api } from "@/lib/api";
+import { EnrollmentList, sortEnrollments } from "@/components/enrollments/EnrollmentList";
+import { MentorshipList } from "@/components/mentorships/MentorshipList";
+import { api, apiErrorMessage } from "@/lib/api";
 import { clearAuthSession, getStoredUser, roleLabel, type StoredUser } from "@/lib/auth";
+import { listReceivedMentorshipRequests, type Enrollment } from "@/lib/enrollments";
+import { listMentorshipsAsMentor, type MentorshipRelationship } from "@/lib/mentorships";
 
 type MentorProfile = {
   id: string;
@@ -44,6 +48,9 @@ export default function MentorDashboardPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [ready, setReady] = useState(false);
+  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+  const [enrollmentsError, setEnrollmentsError] = useState<string | null>(null);
+  const [mentorships, setMentorships] = useState<MentorshipRelationship[]>([]);
 
   useEffect(() => {
     const parsed = getStoredUser();
@@ -61,6 +68,14 @@ export default function MentorDashboardPage() {
       .then(setProfile)
       .catch(() => setError("Não foi possível carregar o perfil."))
       .finally(() => setReady(true));
+
+    listReceivedMentorshipRequests()
+      .then((items) => setEnrollments(sortEnrollments(items)))
+      .catch((err) => setEnrollmentsError(apiErrorMessage(err, "Não foi possível carregar as solicitações.")));
+
+    listMentorshipsAsMentor()
+      .then((page) => setMentorships(page.items))
+      .catch(() => undefined);
   }, [router]);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
@@ -108,6 +123,17 @@ export default function MentorDashboardPage() {
       <p style={{ marginBottom: "1.5rem" }}>
         Olá, {user.name}. <span className="role-badge">{roleLabel(user.role)}</span>
       </p>
+
+      <section className="enrollment-section">
+        <h2>Solicitações de mentoria</h2>
+        {enrollmentsError ? <p className="error">{enrollmentsError}</p> : null}
+        <EnrollmentList items={enrollments} perspective="MENTOR" onChange={(items) => setEnrollments(sortEnrollments(items))} />
+      </section>
+
+      <section className="enrollment-section">
+        <h2>Minhas mentorias</h2>
+        <MentorshipList items={mentorships} perspective="MENTOR" />
+      </section>
 
       {!profile ? (
         <p className="error">{error ?? "Perfil indisponível."}</p>
@@ -209,6 +235,7 @@ export default function MentorDashboardPage() {
 
       <div style={{ display: "flex", gap: "0.75rem", marginTop: "1.5rem" }}>
         <Link href="/feed" className="btn">Ir para o feed</Link>
+        <Link href="/agenda" className="btn secondary">Agenda</Link>
         <Link href="/mentorias" className="btn secondary">Ver catálogo</Link>
         <button
           className="btn secondary"

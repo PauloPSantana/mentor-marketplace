@@ -1,12 +1,16 @@
 package br.com.mentorhub.social.api;
 
 import br.com.mentorhub.shared.security.SecurityUtils;
+import br.com.mentorhub.social.api.dto.BlockStatusResponse;
 import br.com.mentorhub.social.api.dto.FollowListResponse;
 import br.com.mentorhub.social.api.dto.FollowStatusResponse;
+import br.com.mentorhub.social.application.BlockUserService;
 import br.com.mentorhub.social.application.FollowUserService;
+import br.com.mentorhub.social.application.GetBlockStatusService;
 import br.com.mentorhub.social.application.GetFollowStatusService;
 import br.com.mentorhub.social.application.ListFollowersService;
 import br.com.mentorhub.social.application.ListFollowingService;
+import br.com.mentorhub.social.application.UnblockUserService;
 import br.com.mentorhub.social.application.UnfollowUserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -28,19 +32,28 @@ public class UserFollowController {
     private final GetFollowStatusService getFollowStatusService;
     private final ListFollowersService listFollowersService;
     private final ListFollowingService listFollowingService;
+    private final BlockUserService blockUserService;
+    private final UnblockUserService unblockUserService;
+    private final GetBlockStatusService getBlockStatusService;
 
     public UserFollowController(
             FollowUserService followUserService,
             UnfollowUserService unfollowUserService,
             GetFollowStatusService getFollowStatusService,
             ListFollowersService listFollowersService,
-            ListFollowingService listFollowingService
+            ListFollowingService listFollowingService,
+            BlockUserService blockUserService,
+            UnblockUserService unblockUserService,
+            GetBlockStatusService getBlockStatusService
     ) {
         this.followUserService = followUserService;
         this.unfollowUserService = unfollowUserService;
         this.getFollowStatusService = getFollowStatusService;
         this.listFollowersService = listFollowersService;
         this.listFollowingService = listFollowingService;
+        this.blockUserService = blockUserService;
+        this.unblockUserService = unblockUserService;
+        this.getBlockStatusService = getBlockStatusService;
     }
 
     @PostMapping("/follow")
@@ -56,6 +69,21 @@ public class UserFollowController {
     @GetMapping("/follow-status")
     public ResponseEntity<FollowStatusResponse> followStatus(@PathVariable UUID userId) {
         return ResponseEntity.ok(getFollowStatusService.execute(SecurityUtils.requireCurrentUserId(), userId));
+    }
+
+    @PostMapping("/block")
+    public ResponseEntity<BlockStatusResponse> block(@PathVariable UUID userId) {
+        return ResponseEntity.ok(blockUserService.execute(SecurityUtils.requireCurrentUserId(), userId));
+    }
+
+    @DeleteMapping("/block")
+    public ResponseEntity<BlockStatusResponse> unblock(@PathVariable UUID userId) {
+        return ResponseEntity.ok(unblockUserService.execute(SecurityUtils.requireCurrentUserId(), userId));
+    }
+
+    @GetMapping("/block-status")
+    public ResponseEntity<BlockStatusResponse> blockStatus(@PathVariable UUID userId) {
+        return ResponseEntity.ok(getBlockStatusService.execute(SecurityUtils.requireCurrentUserId(), userId));
     }
 
     @GetMapping("/followers")

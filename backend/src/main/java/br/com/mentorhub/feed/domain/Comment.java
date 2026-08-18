@@ -8,7 +8,8 @@ import java.util.UUID;
 
 public class Comment {
 
-    private static final int MAX_CONTENT_LENGTH = 2000;
+    public static final String DELETED_PLACEHOLDER = "[Comentário removido]";
+    private static final int MAX_CONTENT_LENGTH = 1000;
 
     private final UUID id;
     private final UUID postId;
@@ -19,7 +20,9 @@ public class Comment {
     private final String authorPhotoUrl;
     private final String authorHeadline;
     private final String authorRole;
+    private final CommentStatus status;
     private final Instant createdAt;
+    private final Instant updatedAt;
 
     private Comment(
             UUID id,
@@ -31,18 +34,22 @@ public class Comment {
             String authorPhotoUrl,
             String authorHeadline,
             String authorRole,
-            Instant createdAt
+            CommentStatus status,
+            Instant createdAt,
+            Instant updatedAt
     ) {
         this.id = Objects.requireNonNull(id);
         this.postId = Objects.requireNonNull(postId);
         this.parentCommentId = parentCommentId;
         this.authorUserId = Objects.requireNonNull(authorUserId);
-        this.content = requireContent(content);
+        this.content = resolveContent(content, status);
         this.authorName = requireAuthorName(authorName);
         this.authorPhotoUrl = blankToNull(authorPhotoUrl);
         this.authorHeadline = blankToNull(authorHeadline);
         this.authorRole = Objects.requireNonNull(authorRole);
+        this.status = Objects.requireNonNull(status);
         this.createdAt = Objects.requireNonNull(createdAt);
+        this.updatedAt = updatedAt;
     }
 
     public static Comment create(
@@ -55,6 +62,7 @@ public class Comment {
             String authorHeadline,
             String authorRole
     ) {
+        Instant now = Instant.now();
         return new Comment(
                 UUID.randomUUID(),
                 postId,
@@ -65,7 +73,9 @@ public class Comment {
                 authorPhotoUrl,
                 authorHeadline,
                 authorRole,
-                Instant.now()
+                CommentStatus.ACTIVE,
+                now,
+                now
         );
     }
 
@@ -79,7 +89,9 @@ public class Comment {
             String authorPhotoUrl,
             String authorHeadline,
             String authorRole,
-            Instant createdAt
+            CommentStatus status,
+            Instant createdAt,
+            Instant updatedAt
     ) {
         return new Comment(
                 id,
@@ -91,7 +103,30 @@ public class Comment {
                 authorPhotoUrl,
                 authorHeadline,
                 authorRole,
-                createdAt
+                status,
+                createdAt,
+                updatedAt
+        );
+    }
+
+    public Comment markAsDeleted() {
+        if (status == CommentStatus.DELETED) {
+            return this;
+        }
+        Instant now = Instant.now();
+        return new Comment(
+                id,
+                postId,
+                parentCommentId,
+                authorUserId,
+                content,
+                authorName,
+                authorPhotoUrl,
+                authorHeadline,
+                authorRole,
+                CommentStatus.DELETED,
+                createdAt,
+                now
         );
     }
 
@@ -103,13 +138,32 @@ public class Comment {
         return parentCommentId != null;
     }
 
+    public boolean isActive() {
+        return status == CommentStatus.ACTIVE;
+    }
+
+    public boolean isDeleted() {
+        return status == CommentStatus.DELETED;
+    }
+
+    public String getDisplayContent() {
+        return isDeleted() ? DELETED_PLACEHOLDER : content;
+    }
+
+    private static String resolveContent(String content, CommentStatus status) {
+        if (status == CommentStatus.DELETED) {
+            return DELETED_PLACEHOLDER;
+        }
+        return requireContent(content);
+    }
+
     private static String requireContent(String content) {
         if (content == null || content.isBlank()) {
             throw new BusinessException("INVALID_COMMENT", "O comentário é obrigatório");
         }
         String trimmed = content.trim();
         if (trimmed.length() > MAX_CONTENT_LENGTH) {
-            throw new BusinessException("INVALID_COMMENT", "Comentário deve ter no máximo 2000 caracteres");
+            throw new BusinessException("INVALID_COMMENT", "Comentário deve ter no máximo 1000 caracteres");
         }
         return trimmed;
     }
@@ -164,7 +218,15 @@ public class Comment {
         return authorRole;
     }
 
+    public CommentStatus getStatus() {
+        return status;
+    }
+
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
     }
 }

@@ -11,6 +11,8 @@ public interface MentorProfileRepository {
 
     Optional<MentorProfile> findById(UUID id);
 
+    List<MentorProfile> findByIdIn(Collection<UUID> ids);
+
     Optional<MentorProfile> findByUserId(UUID userId);
 
     List<MentorProfile> findByUserIdIn(Collection<UUID> userIds);

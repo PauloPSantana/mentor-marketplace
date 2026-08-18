@@ -4,6 +4,8 @@ export type FollowStatus = {
   following: boolean;
   followerCount: number;
   followingCount: number;
+  blocked?: boolean;
+  blockedBy?: boolean;
 };
 
 export type FollowUser = {
@@ -11,6 +13,7 @@ export type FollowUser = {
   name: string;
   role: string | null;
   followedAt: string;
+  mentorProfileId?: string | null;
 };
 
 export type FollowList = {
@@ -20,6 +23,11 @@ export type FollowList = {
   totalElements: number;
   totalPages: number;
   last: boolean;
+};
+
+export type BlockStatus = {
+  blocked: boolean;
+  blockedBy: boolean;
 };
 
 export const FOLLOW_EVENT = "mentorhub:follow";
@@ -35,6 +43,10 @@ export function setCachedFollowStatus(userId: string, status: FollowStatus): voi
   if (typeof window !== "undefined") {
     window.dispatchEvent(new CustomEvent(FOLLOW_EVENT, { detail: { userId, status } }));
   }
+}
+
+export function clearCachedFollowStatus(userId: string): void {
+  followStatusCache.delete(userId);
 }
 
 export function followUser(userId: string): Promise<FollowStatus> {
@@ -68,4 +80,16 @@ export function listFollowers(userId: string, page = 0, size = 20): Promise<Foll
 
 export function listFollowing(userId: string, page = 0, size = 20): Promise<FollowList> {
   return api<FollowList>(`/api/v1/users/${userId}/following?page=${page}&size=${size}`);
+}
+
+export function blockUser(userId: string): Promise<BlockStatus> {
+  return api<BlockStatus>(`/api/v1/users/${userId}/block`, { method: "POST" });
+}
+
+export function unblockUser(userId: string): Promise<BlockStatus> {
+  return api<BlockStatus>(`/api/v1/users/${userId}/block`, { method: "DELETE" });
+}
+
+export function getBlockStatus(userId: string): Promise<BlockStatus> {
+  return api<BlockStatus>(`/api/v1/users/${userId}/block-status`);
 }

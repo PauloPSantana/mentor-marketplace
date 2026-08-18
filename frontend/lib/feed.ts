@@ -30,7 +30,9 @@ export type Comment = {
   authorPhotoUrl: string | null;
   authorHeadline: string | null;
   authorRole: string;
+  status: "ACTIVE" | "DELETED";
   createdAt: string;
+  updatedAt: string | null;
   replies: Comment[];
 };
 
@@ -113,13 +115,17 @@ export function listComments(postId: string): Promise<PostComments> {
   return api<PostComments>(`/api/v1/posts/${postId}/comments`);
 }
 
-export function createComment(postId: string, content: string, parentCommentId?: string): Promise<Comment> {
+export function createComment(postId: string, content: string): Promise<Comment> {
   return api<Comment>(`/api/v1/posts/${postId}/comments`, {
     method: "POST",
-    body: JSON.stringify({
-      content,
-      parentCommentId: parentCommentId ?? null
-    })
+    body: JSON.stringify({ content })
+  }).then(normalizeComment);
+}
+
+export function createReply(postId: string, commentId: string, content: string): Promise<Comment> {
+  return api<Comment>(`/api/v1/posts/${postId}/comments/${commentId}/replies`, {
+    method: "POST",
+    body: JSON.stringify({ content })
   }).then(normalizeComment);
 }
 
@@ -147,6 +153,8 @@ export function normalizeComment(comment: Comment): Comment {
     parentCommentId: comment.parentCommentId ?? null,
     authorPhotoUrl: comment.authorPhotoUrl ?? null,
     authorHeadline: comment.authorHeadline ?? null,
+    status: comment.status ?? "ACTIVE",
+    updatedAt: comment.updatedAt ?? null,
     replies: (comment.replies ?? []).map(normalizeComment)
   };
 }
