@@ -14,7 +14,10 @@ export type NotificationType =
   | "SESSION_CANCELLED"
   | "SESSION_COMPLETED"
   | "SESSION_NO_SHOW"
-  | "SESSION_REMINDER";
+  | "SESSION_REMINDER"
+  | "PAYMENT_PAID"
+  | "PAYMENT_FAILED"
+  | "REVIEW_RECEIVED";
 
 export type Notification = {
   id: string;

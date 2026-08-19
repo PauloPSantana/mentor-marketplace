@@ -35,6 +35,9 @@ export function MentorshipList({ items, perspective }: MentorshipListProps) {
               {item.nextSession ? (
                 <p className="post-meta">Próxima sessão: {formatSessionDate(item.nextSession.scheduledAt)}</p>
               ) : null}
+              {item.paymentRequired && !item.paymentSettled ? (
+                <p className="post-meta">Pagamento pendente</p>
+              ) : null}
             </div>
             <div className="enrollment-actions">
               <span className={`status-badge ${item.status.toLowerCase()}`}>

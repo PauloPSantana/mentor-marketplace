@@ -21,6 +21,15 @@ public record RegisterRequest(
         String password,
 
         @NotNull(message = "Papel é obrigatório")
-        UserRole role
+        UserRole role,
+
+        @Size(max = 72, message = "Confirmação de senha deve ter no máximo 72 caracteres")
+        String confirmPassword,
+
+        @Size(max = 500, message = "Link do LinkedIn deve ter no máximo 500 caracteres")
+        String linkedinUrl,
+
+        @Size(max = 500, message = "Foto deve ter no máximo 500 caracteres")
+        String photoUrl
 ) {
 }

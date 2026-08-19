@@ -35,12 +35,14 @@ public class CreatePostService {
         User user = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new NotFoundException("Usuário não encontrado"));
 
-        String photoUrl = null;
+        String photoUrl = user.getPhotoUrl();
         String headline = null;
         if (user.getRole() == UserRole.MENTOR) {
             MentorProfile mentorProfile = mentorProfileRepository.findByUserId(user.getId()).orElse(null);
             if (mentorProfile != null) {
-                photoUrl = mentorProfile.getPhotoUrl();
+                if (photoUrl == null || photoUrl.isBlank()) {
+                    photoUrl = mentorProfile.getPhotoUrl();
+                }
                 headline = mentorProfile.getHeadline();
             }
         }

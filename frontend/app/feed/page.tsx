@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { HelpTooltip } from "@/components/help/HelpTooltip";
 import { CreatePost } from "@/components/feed/CreatePost";
 import { PostCard } from "@/components/feed/PostCard";
 import { apiErrorMessage } from "@/lib/api";
@@ -156,7 +157,14 @@ export default function FeedPage() {
 
   return (
     <main className="container feed-page">
-      <h1>Feed</h1>
+      <h1 className="help-heading">
+        Feed
+        <HelpTooltip
+          text="Publique ideias, curta e comente. Clique no avatar para enviar sua foto de perfil."
+          href="/ajuda/feed"
+          label="Ajuda sobre o feed"
+        />
+      </h1>
       <p className="feed-subtitle">{activeTab.description}</p>
       <div className="feed-tabs" role="tablist" aria-label="Tipo de feed">
         {FEED_TABS.map((tab) => (

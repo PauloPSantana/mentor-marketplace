@@ -3,6 +3,7 @@ package br.com.mentorhub.identity.application;
 import br.com.mentorhub.identity.domain.User;
 import br.com.mentorhub.identity.domain.UserRepository;
 import br.com.mentorhub.identity.domain.UserRole;
+import br.com.mentorhub.shared.exception.BusinessException;
 import br.com.mentorhub.shared.exception.ConflictException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,6 +55,16 @@ class RegisterUserServiceTest {
         ArgumentCaptor<MentorUserRegisteredEvent> eventCaptor = ArgumentCaptor.forClass(MentorUserRegisteredEvent.class);
         verify(eventPublisher).publishEvent(eventCaptor.capture());
         assertEquals(user.getId(), eventCaptor.getValue().userId());
+    }
+
+    @Test
+    void shouldRejectWeakPassword() {
+        BusinessException error = assertThrows(
+                BusinessException.class,
+                () -> service.execute("Mentor", "mentor@email.com", "senhasenha", "senhasenha", UserRole.MENTOR, null, null)
+        );
+        assertEquals("WEAK_PASSWORD", error.getCode());
+        verify(userRepository, never()).save(any());
     }
 
     @Test

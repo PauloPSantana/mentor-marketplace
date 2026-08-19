@@ -32,4 +32,32 @@ class UserTest {
         User user = User.register("João", "  Joao@Email.COM ", "hash", UserRole.MENTEE);
         assertEquals("joao@email.com", user.getEmail());
     }
+
+    @Test
+    void shouldRenameUser() {
+        User user = User.register("Paulo Teste", "paulo@email.com", "hash", UserRole.MENTOR);
+
+        user.rename("  Paulo Santana  ");
+
+        assertEquals("Paulo Santana", user.getName());
+    }
+
+    @Test
+    void shouldUpdatePhoto() {
+        User user = User.register("Paulo Teste", "paulo@email.com", "hash", UserRole.MENTEE);
+
+        user.updatePhoto(" /uploads/profiles/paulo.jpg ");
+
+        assertEquals("/uploads/profiles/paulo.jpg", user.getPhotoUrl());
+    }
+
+    @Test
+    void shouldRejectBlankNameOnRename() {
+        User user = User.register("Paulo Teste", "paulo@email.com", "hash", UserRole.MENTEE);
+
+        BusinessException error = assertThrows(BusinessException.class, () -> user.rename("   "));
+
+        assertEquals("INVALID_NAME", error.getCode());
+        assertEquals("Paulo Teste", user.getName());
+    }
 }

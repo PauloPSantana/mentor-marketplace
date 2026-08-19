@@ -12,14 +12,14 @@ export class ApiError extends Error {
 
 export function apiErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof ApiError) {
-    if (error.status === 401 || error.status === 403) {
-      return "Sessão expirada. Faça login novamente.";
-    }
     if (!error.status) {
       return "Não foi possível conectar à API. Verifique se o backend está rodando em http://localhost:8080.";
     }
     if (error.message && !error.message.startsWith("API error:")) {
       return error.message;
+    }
+    if (error.status === 401 || error.status === 403) {
+      return fallback;
     }
   }
   return fallback;
@@ -27,13 +27,17 @@ export function apiErrorMessage(error: unknown, fallback: string): string {
 
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const headers = new Headers(init?.headers);
-  if (!headers.has("Content-Type") && init?.body) {
+  if (!headers.has("Content-Type") && init?.body && !(init.body instanceof FormData)) {
     headers.set("Content-Type", "application/json");
   }
 
   if (typeof window !== "undefined") {
     const token = localStorage.getItem("mentorhub.token");
-    if (token && !headers.has("Authorization")) {
+    const isPublicAuth =
+      path === "/api/v1/auth/register" ||
+      path === "/api/v1/auth/login" ||
+      path.startsWith("/api/v1/auth/linkedin/");
+    if (token && !headers.has("Authorization") && !isPublicAuth) {
       headers.set("Authorization", `Bearer ${token}`);
     }
   }
@@ -66,4 +70,13 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   }
 
   return response.json() as Promise<T>;
+}
+
+export async function apiUpload<T>(path: string, file: File, fieldName = "file"): Promise<T> {
+  const body = new FormData();
+  body.append(fieldName, file);
+  return api<T>(path, {
+    method: "POST",
+    body
+  });
 }

@@ -68,7 +68,7 @@ class CommentComposer {
                 author.getId(),
                 content,
                 author.getName(),
-                photoUrl(mentorProfile),
+                photoUrl(author, mentorProfile),
                 headline(author, mentorProfile),
                 author.getRole().name()
         ));
@@ -109,7 +109,10 @@ class CommentComposer {
         }
     }
 
-    private static String photoUrl(MentorProfile mentorProfile) {
+    private static String photoUrl(User author, MentorProfile mentorProfile) {
+        if (author.getPhotoUrl() != null && !author.getPhotoUrl().isBlank()) {
+            return author.getPhotoUrl();
+        }
         return mentorProfile == null ? null : mentorProfile.getPhotoUrl();
     }
 

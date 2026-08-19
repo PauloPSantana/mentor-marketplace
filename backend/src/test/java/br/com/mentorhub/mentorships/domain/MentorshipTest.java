@@ -52,11 +52,13 @@ class MentorshipTest {
     }
 
     @Test
-    void shouldRejectCompleteWhenAlreadyCompleted() {
+    void shouldKeepCompleteIdempotent() {
         Mentorship completed = sample().complete(UUID.randomUUID());
+        Mentorship again = completed.complete(UUID.randomUUID());
 
-        BusinessException error = assertThrows(BusinessException.class, () -> completed.complete(UUID.randomUUID()));
-        assertEquals("INVALID_MENTORSHIP_STATUS", error.getCode());
+        assertEquals(MentorshipStatus.COMPLETED, again.getStatus());
+        assertEquals(completed.getCompletedAt(), again.getCompletedAt());
+        assertEquals(completed.getStatusChangedByUserId(), again.getStatusChangedByUserId());
     }
 
     @Test

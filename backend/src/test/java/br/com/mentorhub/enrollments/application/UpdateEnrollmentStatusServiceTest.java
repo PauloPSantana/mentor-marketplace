@@ -10,6 +10,7 @@ import br.com.mentorhub.identity.domain.UserRole;
 import br.com.mentorhub.mentors.domain.MentorProfile;
 import br.com.mentorhub.mentors.domain.MentorProfileRepository;
 import br.com.mentorhub.mentorships.application.CreateMentorshipFromAcceptedRequestService;
+import br.com.mentorhub.mentorships.application.MentorshipCompletionPolicy;
 import br.com.mentorhub.mentorships.domain.MentorshipProduct;
 import br.com.mentorhub.mentorships.domain.MentorshipProductRepository;
 import br.com.mentorhub.mentorships.domain.MentorshipRepository;
@@ -52,6 +53,8 @@ class UpdateEnrollmentStatusServiceTest {
     private ApplicationEventPublisher eventPublisher;
     @Mock
     private EnrollmentResponseMapper enrollmentResponseMapper;
+    @Mock
+    private MentorshipCompletionPolicy mentorshipCompletionPolicy;
 
     private UpdateEnrollmentStatusService service;
 
@@ -65,7 +68,8 @@ class UpdateEnrollmentStatusServiceTest {
                 mentorshipRepository,
                 userRepository,
                 eventPublisher,
-                enrollmentResponseMapper
+                enrollmentResponseMapper,
+                mentorshipCompletionPolicy
         );
     }
 

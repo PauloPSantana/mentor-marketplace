@@ -6,6 +6,7 @@ import br.com.mentorhub.identity.domain.UserRole;
 import br.com.mentorhub.mentorships.api.dto.CreateSessionRequest;
 import br.com.mentorhub.mentorships.api.dto.MentorshipSessionResponse;
 import br.com.mentorhub.mentorships.domain.Mentorship;
+import br.com.mentorhub.mentorships.domain.MentorshipPaymentGate;
 import br.com.mentorhub.mentorships.domain.MentorshipProduct;
 import br.com.mentorhub.mentorships.domain.MentorshipProductRepository;
 import br.com.mentorhub.mentorships.domain.MentorshipRepository;
@@ -38,6 +39,7 @@ public class CreateSessionService {
     private final MentorshipProductRepository mentorshipProductRepository;
     private final UserRepository userRepository;
     private final MentorshipRelationshipMapper mentorshipRelationshipMapper;
+    private final MentorshipPaymentGate mentorshipPaymentGate;
     private final ApplicationEventPublisher eventPublisher;
     private final int maxDurationMinutes;
 
@@ -47,6 +49,7 @@ public class CreateSessionService {
             MentorshipProductRepository mentorshipProductRepository,
             UserRepository userRepository,
             MentorshipRelationshipMapper mentorshipRelationshipMapper,
+            MentorshipPaymentGate mentorshipPaymentGate,
             ApplicationEventPublisher eventPublisher,
             @Value("${mentorhub.sessions.max-duration-minutes:240}") int maxDurationMinutes
     ) {
@@ -55,6 +58,7 @@ public class CreateSessionService {
         this.mentorshipProductRepository = mentorshipProductRepository;
         this.userRepository = userRepository;
         this.mentorshipRelationshipMapper = mentorshipRelationshipMapper;
+        this.mentorshipPaymentGate = mentorshipPaymentGate;
         this.eventPublisher = eventPublisher;
         this.maxDurationMinutes = maxDurationMinutes;
     }
@@ -74,6 +78,9 @@ public class CreateSessionService {
 
         MentorshipProduct product = mentorshipProductRepository.findById(mentorship.getProductId())
                 .orElseThrow(() -> new NotFoundException("Serviço de mentoria não encontrado"));
+        if (!mentorshipPaymentGate.isSettled(mentorship.getId(), product.getPrice())) {
+            throw new BusinessException("PAYMENT_REQUIRED", "O pagamento deve ser confirmado antes de agendar sessões");
+        }
         long usedSessions = mentorshipSessionRepository.countByMentorshipIdAndStatusIn(mentorship.getId(), COUNTED_STATUSES);
         if (usedSessions >= product.getSessionsCount()) {
             throw new BusinessException("SESSION_LIMIT_REACHED", "O limite de sessões desta mentoria foi atingido");

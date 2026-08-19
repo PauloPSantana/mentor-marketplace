@@ -5,10 +5,13 @@ import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { EnrollmentList, sortEnrollments } from "@/components/enrollments/EnrollmentList";
 import { MentorshipList } from "@/components/mentorships/MentorshipList";
+import { EditAccountName } from "@/components/EditAccountName";
+import { HelpTooltip } from "@/components/help/HelpTooltip";
 import { api, apiErrorMessage } from "@/lib/api";
 import { clearAuthSession, getStoredUser, roleLabel, type StoredUser } from "@/lib/auth";
 import { listReceivedMentorshipRequests, type Enrollment } from "@/lib/enrollments";
 import { listMentorshipsAsMentor, type MentorshipRelationship } from "@/lib/mentorships";
+import { parseLinkedInUrl } from "@/lib/linkedin";
 
 type MentorProfile = {
   id: string;
@@ -51,6 +54,7 @@ export default function MentorDashboardPage() {
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [enrollmentsError, setEnrollmentsError] = useState<string | null>(null);
   const [mentorships, setMentorships] = useState<MentorshipRelationship[]>([]);
+  const [linkedinUrl, setLinkedinUrl] = useState("");
 
   useEffect(() => {
     const parsed = getStoredUser();
@@ -65,7 +69,10 @@ export default function MentorDashboardPage() {
     setUser(parsed);
 
     api<MentorProfile>("/api/v1/mentors/me")
-      .then(setProfile)
+      .then((loaded) => {
+        setProfile(loaded);
+        setLinkedinUrl(loaded.linkedinUrl ?? "");
+      })
       .catch(() => setError("Não foi possível carregar o perfil."))
       .finally(() => setReady(true));
 
@@ -86,6 +93,17 @@ export default function MentorDashboardPage() {
 
     const form = new FormData(event.currentTarget);
     const sessionPriceRaw = String(form.get("sessionPrice") ?? "").trim();
+    let normalizedLinkedIn: string | null = linkedinUrl.trim() || null;
+    if (normalizedLinkedIn) {
+      try {
+        normalizedLinkedIn = parseLinkedInUrl(normalizedLinkedIn).url;
+        setLinkedinUrl(normalizedLinkedIn);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Informe um link válido do LinkedIn.");
+        setLoading(false);
+        return;
+      }
+    }
 
     try {
       const updated = await api<MentorProfile>("/api/v1/mentors/me", {
@@ -95,7 +113,7 @@ export default function MentorDashboardPage() {
           bio: form.get("bio"),
           yearsExperience: Number(form.get("yearsExperience") || 0),
           photoUrl: form.get("photoUrl") || null,
-          linkedinUrl: form.get("linkedinUrl") || null,
+          linkedinUrl: normalizedLinkedIn,
           githubUrl: form.get("githubUrl") || null,
           sessionPrice: sessionPriceRaw ? Number(sessionPriceRaw) : null,
           modality: form.get("modality") || null,
@@ -105,6 +123,7 @@ export default function MentorDashboardPage() {
         })
       });
       setProfile(updated);
+      setLinkedinUrl(updated.linkedinUrl ?? "");
       setSuccess("Perfil atualizado com sucesso.");
     } catch {
       setError("Não foi possível salvar o perfil. Verifique os dados.");
@@ -120,21 +139,24 @@ export default function MentorDashboardPage() {
   return (
     <main className="container" style={{ padding: "3rem 0", maxWidth: 720 }}>
       <h1>Dashboard do mentor</h1>
-      <p style={{ marginBottom: "1.5rem" }}>
-        Olá, {user.name}. <span className="role-badge">{roleLabel(user.role)}</span>
+      <p style={{ marginBottom: "1.5rem", display: "flex", alignItems: "center", gap: "0.45rem", flexWrap: "wrap" }}>
+        Olá, {user.name}
+        <EditAccountName user={user} onUpdated={setUser} />
+        <span className="role-badge">{roleLabel(user.role)}</span>
       </p>
 
-      <section className="enrollment-section">
-        <h2>Solicitações de mentoria</h2>
-        {enrollmentsError ? <p className="error">{enrollmentsError}</p> : null}
-        <EnrollmentList items={enrollments} perspective="MENTOR" onChange={(items) => setEnrollments(sortEnrollments(items))} />
-      </section>
-
-      <section className="enrollment-section">
-        <h2>Minhas mentorias</h2>
-        <MentorshipList items={mentorships} perspective="MENTOR" />
-      </section>
-
+      <section className="enrollment-section" id="meu-perfil">
+        <h2 className="help-heading">
+          Meu perfil
+          <HelpTooltip
+            text="Preencha título, bio e especialidades para aparecer melhor no catálogo. O nome é editado no lápis ao lado da saudação."
+            href="/ajuda/perfil"
+            label="Ajuda sobre o perfil"
+          />
+        </h2>
+        <p style={{ color: "var(--muted)", marginBottom: "1rem" }}>
+          Aqui você edita LinkedIn, bio, especialidades e as demais informações profissionais.
+        </p>
       {!profile ? (
         <p className="error">{error ?? "Perfil indisponível."}</p>
       ) : (
@@ -209,7 +231,13 @@ export default function MentorDashboardPage() {
         </label>
         <label>
           LinkedIn
-          <input className="input" name="linkedinUrl" defaultValue={profile.linkedinUrl ?? ""} />
+          <input
+            className="input"
+            name="linkedinUrl"
+            value={linkedinUrl}
+            onChange={(event) => setLinkedinUrl(event.target.value)}
+            placeholder="https://www.linkedin.com/in/seu-perfil"
+          />
         </label>
         <label>
           GitHub
@@ -232,6 +260,18 @@ export default function MentorDashboardPage() {
         </button>
       </form>
       )}
+      </section>
+
+      <section className="enrollment-section">
+        <h2>Solicitações de mentoria</h2>
+        {enrollmentsError ? <p className="error">{enrollmentsError}</p> : null}
+        <EnrollmentList items={enrollments} perspective="MENTOR" onChange={(items) => setEnrollments(sortEnrollments(items))} />
+      </section>
+
+      <section className="enrollment-section">
+        <h2>Minhas mentorias</h2>
+        <MentorshipList items={mentorships} perspective="MENTOR" />
+      </section>
 
       <div style={{ display: "flex", gap: "0.75rem", marginTop: "1.5rem" }}>
         <Link href="/feed" className="btn">Ir para o feed</Link>

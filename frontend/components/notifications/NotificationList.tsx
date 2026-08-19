@@ -39,6 +39,10 @@ export function NotificationList({ items, onRead }: NotificationListProps) {
               <Link className="text-btn" href="/dashboard/mentorado">
                 Ver solicitações
               </Link>
+            ) : item.type === "PAYMENT_PAID" || item.type === "PAYMENT_FAILED" || item.type === "REVIEW_RECEIVED" ? (
+              <Link className="text-btn" href="/dashboard/mentorado">
+                Ver mentoria
+              </Link>
             ) : item.type.startsWith("SESSION_") ? (
               <Link className="text-btn" href="/agenda">
                 Ver agenda

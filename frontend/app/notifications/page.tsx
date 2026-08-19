@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { NotificationList } from "@/components/notifications/NotificationList";
+import { HelpTooltip } from "@/components/help/HelpTooltip";
 import { apiErrorMessage } from "@/lib/api";
 import { getStoredUser } from "@/lib/auth";
 import {
@@ -73,7 +74,14 @@ export default function NotificationsPage() {
     <main className="container feed-page">
       <div className="notifications-header">
         <div>
-          <h1>Notificações</h1>
+          <h1 className="help-heading">
+            Notificações
+            <HelpTooltip
+              text="Aqui chegam pedidos, aceites, comentários e outras atualizações da sua conta."
+              href="/ajuda/notificacoes"
+              label="Ajuda sobre notificações"
+            />
+          </h1>
           <p className="feed-subtitle">
             {unreadCount > 0
               ? `${unreadCount} ${unreadCount === 1 ? "não lida" : "não lidas"}`

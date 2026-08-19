@@ -5,6 +5,7 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { dashboardPath, setAuthSession } from "@/lib/auth";
+import { HelpTooltip } from "@/components/help/HelpTooltip";
 
 type AuthResponse = {
   accessToken: string;
@@ -41,7 +42,14 @@ export default function LoginPage() {
 
   return (
     <main className="container" style={{ padding: "3rem 0", maxWidth: 480 }}>
-      <h1>Entrar</h1>
+      <h1 className="help-heading">
+        Entrar
+        <HelpTooltip
+          text="Use o email e a senha do cadastro. Depois do login, você vai para o painel de mentor ou mentorado."
+          href="/ajuda/primeiros-passos"
+          label="Ajuda sobre login"
+        />
+      </h1>
       <p style={{ marginBottom: "1.5rem" }}>Acesse sua conta de mentor ou mentorado.</p>
       <form className="card-form" onSubmit={onSubmit} style={{ display: "grid", gap: "1rem" }}>
         <label>

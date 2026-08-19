@@ -10,10 +10,12 @@ import br.com.mentorhub.mentors.domain.MentorProfile;
 import br.com.mentorhub.mentors.domain.MentorProfileRepository;
 import br.com.mentorhub.mentorships.application.CreateMentorshipFromAcceptedRequestService;
 import br.com.mentorhub.mentorships.application.MentorshipCompletedEvent;
+import br.com.mentorhub.mentorships.application.MentorshipCompletionPolicy;
 import br.com.mentorhub.mentorships.domain.Mentorship;
 import br.com.mentorhub.mentorships.domain.MentorshipProduct;
 import br.com.mentorhub.mentorships.domain.MentorshipProductRepository;
 import br.com.mentorhub.mentorships.domain.MentorshipRepository;
+import br.com.mentorhub.mentorships.domain.MentorshipStatus;
 import br.com.mentorhub.shared.exception.NotFoundException;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
@@ -33,6 +35,7 @@ public class UpdateEnrollmentStatusService {
     private final UserRepository userRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final EnrollmentResponseMapper enrollmentResponseMapper;
+    private final MentorshipCompletionPolicy mentorshipCompletionPolicy;
 
     public UpdateEnrollmentStatusService(
             EnrollmentRepository enrollmentRepository,
@@ -42,7 +45,8 @@ public class UpdateEnrollmentStatusService {
             MentorshipRepository mentorshipRepository,
             UserRepository userRepository,
             ApplicationEventPublisher eventPublisher,
-            EnrollmentResponseMapper enrollmentResponseMapper
+            EnrollmentResponseMapper enrollmentResponseMapper,
+            MentorshipCompletionPolicy mentorshipCompletionPolicy
     ) {
         this.enrollmentRepository = enrollmentRepository;
         this.mentorshipProductRepository = mentorshipProductRepository;
@@ -52,6 +56,7 @@ public class UpdateEnrollmentStatusService {
         this.userRepository = userRepository;
         this.eventPublisher = eventPublisher;
         this.enrollmentResponseMapper = enrollmentResponseMapper;
+        this.mentorshipCompletionPolicy = mentorshipCompletionPolicy;
     }
 
     @Transactional
@@ -91,6 +96,10 @@ public class UpdateEnrollmentStatusService {
         AuthorizedEnrollment ctx = authorizeMentor(actorUserId, enrollmentId);
         Mentorship mentorship = mentorshipRepository.findByEnrollmentId(ctx.enrollment().getId())
                 .orElseThrow(() -> new NotFoundException("Mentoria ativa não encontrada"));
+        if (mentorship.getStatus() == MentorshipStatus.COMPLETED) {
+            return enrollmentResponseMapper.toResponse(ctx.enrollment());
+        }
+        mentorshipCompletionPolicy.requireReady(mentorship);
         Mentorship completed = mentorshipRepository.save(mentorship.complete(actorUserId));
         eventPublisher.publishEvent(new MentorshipCompletedEvent(
                 completed.getId(),

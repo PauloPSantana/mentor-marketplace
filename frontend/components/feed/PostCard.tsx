@@ -8,6 +8,8 @@ import { LikeButton } from "@/components/feed/LikeButton";
 import { PostLikeList } from "@/components/feed/PostLikeList";
 import { ShareButton } from "@/components/feed/ShareButton";
 import { FollowButton } from "@/components/social/FollowButton";
+import { mediaUrl } from "@/lib/media";
+import { UserAvatar } from "@/components/UserAvatar";
 import {
   createComment,
   deletePost,
@@ -118,21 +120,13 @@ export function PostCard({ post, currentUserId, onUpdated, onDeleted }: PostCard
     setShowComments((value) => !value);
   }
 
-  const initial = post.authorName.trim().charAt(0).toUpperCase();
   const commentLabel =
     post.commentCount === 1 ? "1 comentário" : `${post.commentCount ?? 0} comentários`;
 
   return (
     <article className="post-card" id={`post-${post.id}`}>
       <header className="post-author">
-        {post.authorPhotoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img className="avatar" src={post.authorPhotoUrl} alt="" />
-        ) : (
-          <div className="avatar" aria-hidden="true">
-            {initial}
-          </div>
-        )}
+        <UserAvatar name={post.authorName} photoUrl={post.authorPhotoUrl} />
         <div className="post-author-text">
           <strong>{post.authorName}</strong>
           <p className="post-meta">
@@ -181,7 +175,7 @@ export function PostCard({ post, currentUserId, onUpdated, onDeleted }: PostCard
           <p className="post-content">{post.content}</p>
           {post.imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img className="post-image" src={post.imageUrl} alt="" />
+            <img className="post-image" src={mediaUrl(post.imageUrl) ?? ""} alt="" />
           ) : null}
         </>
       )}

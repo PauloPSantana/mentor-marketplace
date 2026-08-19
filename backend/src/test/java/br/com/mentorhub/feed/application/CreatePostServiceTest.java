@@ -95,6 +95,21 @@ class CreatePostServiceTest {
     }
 
     @Test
+    void shouldUseUserPhotoForMenteePost() {
+        UUID userId = UUID.randomUUID();
+        User mentee = restore(User.register("Ana", "ana@email.com", "hash", UserRole.MENTEE), userId);
+        mentee.updatePhoto("/uploads/profiles/" + userId + ".jpg");
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(mentee));
+        when(postRepository.save(any(Post.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Post post = service.execute(userId, "Quero evoluir na carreira", null);
+
+        assertEquals("/uploads/profiles/" + userId + ".jpg", post.getAuthorPhotoUrl());
+        verify(mentorProfileRepository, never()).findByUserId(any());
+    }
+
+    @Test
     void shouldRejectUnknownUser() {
         UUID userId = UUID.randomUUID();
         when(userRepository.findById(userId)).thenReturn(Optional.empty());

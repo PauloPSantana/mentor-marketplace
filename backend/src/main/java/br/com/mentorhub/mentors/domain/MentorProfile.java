@@ -173,6 +173,24 @@ public class MentorProfile {
         this.updatedAt = Instant.now();
     }
 
+    public void replacePhoto(String photoUrl) {
+        this.photoUrl = blankToNull(photoUrl);
+        this.updatedAt = Instant.now();
+    }
+
+    public void refreshRating(BigDecimal average, int count) {
+        if (count < 0) {
+            throw new BusinessException("INVALID_RATING_COUNT", "Quantidade de avaliações inválida");
+        }
+        this.ratingCount = count;
+        if (count == 0) {
+            this.ratingAvg = BigDecimal.ZERO.setScale(2);
+        } else {
+            this.ratingAvg = Objects.requireNonNull(average).setScale(2, java.math.RoundingMode.HALF_UP);
+        }
+        this.updatedAt = Instant.now();
+    }
+
     public UUID getId() {
         return id;
     }

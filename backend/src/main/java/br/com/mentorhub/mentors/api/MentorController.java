@@ -6,6 +6,9 @@ import br.com.mentorhub.mentors.application.GetMentorProfileService;
 import br.com.mentorhub.mentors.application.GetMyMentorProfileService;
 import br.com.mentorhub.mentors.application.ListMentorProfilesService;
 import br.com.mentorhub.mentors.application.UpdateMyMentorProfileService;
+import br.com.mentorhub.reviews.api.dto.MentorRatingResponse;
+import br.com.mentorhub.reviews.api.dto.ReviewResponse;
+import br.com.mentorhub.reviews.application.ListMentorReviewsService;
 import br.com.mentorhub.shared.security.SecurityUtils;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -28,17 +31,20 @@ public class MentorController {
     private final GetMentorProfileService getMentorProfileService;
     private final GetMyMentorProfileService getMyMentorProfileService;
     private final UpdateMyMentorProfileService updateMyMentorProfileService;
+    private final ListMentorReviewsService listMentorReviewsService;
 
     public MentorController(
             ListMentorProfilesService listMentorProfilesService,
             GetMentorProfileService getMentorProfileService,
             GetMyMentorProfileService getMyMentorProfileService,
-            UpdateMyMentorProfileService updateMyMentorProfileService
+            UpdateMyMentorProfileService updateMyMentorProfileService,
+            ListMentorReviewsService listMentorReviewsService
     ) {
         this.listMentorProfilesService = listMentorProfilesService;
         this.getMentorProfileService = getMentorProfileService;
         this.getMyMentorProfileService = getMyMentorProfileService;
         this.updateMyMentorProfileService = updateMyMentorProfileService;
+        this.listMentorReviewsService = listMentorReviewsService;
     }
 
     @GetMapping
@@ -61,5 +67,15 @@ public class MentorController {
     @GetMapping("/{id}")
     public ResponseEntity<MentorProfileResponse> getById(@PathVariable UUID id) {
         return ResponseEntity.ok(getMentorProfileService.execute(id));
+    }
+
+    @GetMapping("/{id}/reviews")
+    public ResponseEntity<List<ReviewResponse>> reviews(@PathVariable UUID id) {
+        return ResponseEntity.ok(listMentorReviewsService.execute(id));
+    }
+
+    @GetMapping("/{id}/rating")
+    public ResponseEntity<MentorRatingResponse> rating(@PathVariable UUID id) {
+        return ResponseEntity.ok(listMentorReviewsService.rating(id));
     }
 }

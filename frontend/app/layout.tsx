@@ -9,7 +9,14 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR" suppressHydrationWarning>
+    <html lang="pt-BR" data-theme="night" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{var t=localStorage.getItem("mentorhub.theme");document.documentElement.dataset.theme=t==="day"?"day":"night"}catch(e){}`
+          }}
+        />
+      </head>
       <body suppressHydrationWarning>
         <AppHeader />
         {children}

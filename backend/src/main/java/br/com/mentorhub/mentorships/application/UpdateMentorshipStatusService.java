@@ -6,6 +6,7 @@ import br.com.mentorhub.identity.domain.UserRole;
 import br.com.mentorhub.mentorships.api.dto.MentorshipRelationshipResponse;
 import br.com.mentorhub.mentorships.domain.Mentorship;
 import br.com.mentorhub.mentorships.domain.MentorshipRepository;
+import br.com.mentorhub.mentorships.domain.MentorshipStatus;
 import br.com.mentorhub.mentorships.domain.MentorshipSession;
 import br.com.mentorhub.mentorships.domain.MentorshipSessionRepository;
 import br.com.mentorhub.shared.exception.NotFoundException;
@@ -23,6 +24,7 @@ public class UpdateMentorshipStatusService {
     private final MentorshipSessionRepository mentorshipSessionRepository;
     private final UserRepository userRepository;
     private final MentorshipRelationshipMapper mentorshipRelationshipMapper;
+    private final MentorshipCompletionPolicy mentorshipCompletionPolicy;
     private final ApplicationEventPublisher eventPublisher;
 
     public UpdateMentorshipStatusService(
@@ -30,18 +32,24 @@ public class UpdateMentorshipStatusService {
             MentorshipSessionRepository mentorshipSessionRepository,
             UserRepository userRepository,
             MentorshipRelationshipMapper mentorshipRelationshipMapper,
+            MentorshipCompletionPolicy mentorshipCompletionPolicy,
             ApplicationEventPublisher eventPublisher
     ) {
         this.mentorshipRepository = mentorshipRepository;
         this.mentorshipSessionRepository = mentorshipSessionRepository;
         this.userRepository = userRepository;
         this.mentorshipRelationshipMapper = mentorshipRelationshipMapper;
+        this.mentorshipCompletionPolicy = mentorshipCompletionPolicy;
         this.eventPublisher = eventPublisher;
     }
 
     @Transactional
     public MentorshipRelationshipResponse complete(UUID actorUserId, UUID mentorshipId) {
         AuthorizedMentorship ctx = authorize(actorUserId, mentorshipId, true);
+        if (ctx.mentorship().getStatus() == MentorshipStatus.COMPLETED) {
+            return mentorshipRelationshipMapper.toResponse(ctx.mentorship());
+        }
+        mentorshipCompletionPolicy.requireReady(ctx.mentorship());
         Mentorship saved = mentorshipRepository.save(ctx.mentorship().complete(actorUserId));
         eventPublisher.publishEvent(new MentorshipCompletedEvent(
                 saved.getId(),

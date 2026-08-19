@@ -69,6 +69,13 @@ public class CreateNotificationOnMentorshipSession {
                 null,
                 null
         );
+        createNotificationService.execute(
+                event.mentorUserId(),
+                event.menteeUserId(),
+                NotificationType.MENTORSHIP_COMPLETED,
+                null,
+                null
+        );
     }
 
     private void notifyBoth(UUID mentorUserId, UUID menteeUserId, UUID actorUserId, NotificationType type) {

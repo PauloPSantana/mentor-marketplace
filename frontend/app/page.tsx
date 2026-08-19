@@ -12,21 +12,10 @@ export default function HomePage() {
           Encontre o mentor certo para o seu próximo passo profissional.
         </p>
         <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-          <Link href="/mentorias" className="btn">Explorar mentorias</Link>
-          <Link href="/cadastro" className="btn secondary">Sou mentor</Link>
+          <Link href="/ajuda" className="btn secondary">Ajuda e Manual</Link>
+          <Link href="/cadastro?papel=mentor" className="btn secondary">Sou mentor</Link>
+          <Link href="/cadastro" className="btn secondary">Sou mentorado</Link>
         </div>
-      </section>
-
-      <section className="container" style={{ paddingBottom: "4rem" }}>
-        <form action="/mentorias" style={{ display: "flex", gap: "0.75rem", maxWidth: 720 }}>
-          <input
-            className="input"
-            name="q"
-            placeholder="Ex.: Java, arquitetura, carreira, IA..."
-            aria-label="Buscar mentorias"
-          />
-          <button className="btn" type="submit">Buscar</button>
-        </form>
       </section>
     </main>
   );

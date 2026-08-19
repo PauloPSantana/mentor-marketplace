@@ -33,8 +33,11 @@ public class UserJpaEntity {
     private UserRole role;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 30)
+    @Column(name = "status", nullable = false, length = 30)
     private UserStatus status;
+
+    @Column(name = "photo_url", length = 500)
+    private String photoUrl;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
@@ -91,6 +94,14 @@ public class UserJpaEntity {
 
     public void setStatus(UserStatus status) {
         this.status = status;
+    }
+
+    public String getPhotoUrl() {
+        return photoUrl;
+    }
+
+    public void setPhotoUrl(String photoUrl) {
+        this.photoUrl = photoUrl;
     }
 
     public Instant getCreatedAt() {

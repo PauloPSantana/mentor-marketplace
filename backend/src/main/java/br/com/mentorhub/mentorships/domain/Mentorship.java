@@ -140,6 +140,9 @@ public class Mentorship {
     }
 
     public Mentorship complete(UUID actorUserId) {
+        if (status == MentorshipStatus.COMPLETED) {
+            return this;
+        }
         requireMutable();
         Instant now = Instant.now();
         return restore(

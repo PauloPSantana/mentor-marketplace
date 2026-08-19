@@ -12,6 +12,7 @@ import {
   type StoredUser
 } from "@/lib/auth";
 import { getUnreadNotificationCount } from "@/lib/notifications";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export function AppHeader() {
   const router = useRouter();
@@ -72,7 +73,7 @@ export function AppHeader() {
   }
 
   return (
-    <header style={{ borderBottom: "1px solid var(--line)", background: "rgba(255,255,255,0.8)" }}>
+    <header className="site-header">
       <div
         className="container"
         style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1rem 0", gap: "1rem", flexWrap: "wrap" }}
@@ -81,7 +82,8 @@ export function AppHeader() {
           MentorHub AI
         </Link>
         <nav style={{ display: "flex", gap: "1rem", alignItems: "center", flexWrap: "wrap" }}>
-          <Link href="/mentorias">Mentorias</Link>
+          <ThemeToggle />
+          <Link href="/ajuda">Ajuda</Link>
           {user ? <Link href="/feed">Feed</Link> : null}
           {user ? <Link href="/agenda">Agenda</Link> : null}
           {!ready ? null : user ? (

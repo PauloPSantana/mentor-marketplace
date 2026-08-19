@@ -47,6 +47,9 @@ public class SecurityConfig {
                                 "/h2-console/**"
                         ).permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/register", "/api/v1/auth/login").permitAll()
+                        .requestMatchers("/api/v1/auth/linkedin/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/payments/webhook", "/api/v1/payments/webhooks/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/mentors/me").hasRole("MENTOR")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/mentors/me").hasRole("MENTOR")
                         .requestMatchers("/api/v1/mentors/*/enrollments/**").authenticated()

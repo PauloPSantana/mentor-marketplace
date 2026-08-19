@@ -18,8 +18,25 @@ public class CreateMentorProfileOnUserRegistered {
 
     @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
     public void handle(MentorUserRegisteredEvent event) {
-        if (!mentorProfileRepository.existsByUserId(event.userId())) {
-            mentorProfileRepository.save(MentorProfile.create(event.userId()));
+        if (mentorProfileRepository.existsByUserId(event.userId())) {
+            return;
         }
+        MentorProfile profile = MentorProfile.create(event.userId());
+        if (event.linkedinUrl() != null || event.photoUrl() != null) {
+            profile.update(
+                    null,
+                    null,
+                    null,
+                    event.photoUrl(),
+                    event.linkedinUrl(),
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    true
+            );
+        }
+        mentorProfileRepository.save(profile);
     }
 }

@@ -3,6 +3,8 @@ export type StoredUser = {
   name: string;
   email: string;
   role: "MENTOR" | "MENTEE" | "ADMIN" | string;
+  photoUrl?: string | null;
+  updatedAt?: string | null;
 };
 
 const USER_KEY = "mentorhub.user";
@@ -28,6 +30,14 @@ export function setAuthSession(token: string, user: StoredUser): void {
   localStorage.setItem(TOKEN_KEY, token);
   localStorage.setItem(USER_KEY, JSON.stringify(user));
   window.dispatchEvent(new Event(AUTH_EVENT));
+}
+
+export function updateStoredUser(user: StoredUser): void {
+  const token = localStorage.getItem(TOKEN_KEY);
+  if (!token) {
+    return;
+  }
+  setAuthSession(token, user);
 }
 
 export function clearAuthSession(): void {

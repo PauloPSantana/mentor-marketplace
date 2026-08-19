@@ -55,6 +55,7 @@ public class UserRepositoryImpl implements UserRepository {
         entity.setPasswordHash(user.getPasswordHash());
         entity.setRole(user.getRole());
         entity.setStatus(user.getStatus());
+        entity.setPhotoUrl(user.getPhotoUrl());
         entity.setCreatedAt(user.getCreatedAt());
         entity.setUpdatedAt(user.getUpdatedAt());
         return entity;
@@ -69,7 +70,8 @@ public class UserRepositoryImpl implements UserRepository {
                 entity.getRole(),
                 entity.getStatus(),
                 entity.getCreatedAt(),
-                entity.getUpdatedAt()
+                entity.getUpdatedAt(),
+                entity.getPhotoUrl()
         );
     }
 }

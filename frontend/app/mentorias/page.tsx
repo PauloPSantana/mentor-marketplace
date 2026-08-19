@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { FollowButton } from "@/components/social/FollowButton";
 import { apiErrorMessage } from "@/lib/api";
 import { getStoredUser } from "@/lib/auth";
+import { HelpTooltip } from "@/components/help/HelpTooltip";
+import { UserAvatar } from "@/components/UserAvatar";
 import { listMentors, type MentorProfile } from "@/lib/mentors";
 
 export default function MentoriasPage() {
@@ -27,18 +29,24 @@ export default function MentoriasPage() {
 
   return (
     <main className="container feed-page">
-      <h1>Catálogo de mentores</h1>
+      <h1 className="help-heading">
+        Catálogo de mentores
+        <HelpTooltip
+          text="Abra um perfil para seguir, ver avaliações e solicitar mentoria."
+          href="/ajuda/mentores"
+          label="Ajuda sobre o catálogo"
+        />
+      </h1>
       <p className="feed-subtitle">Encontre mentores, siga perfis de interesse e acompanhe publicações no feed.</p>
       {error ? <p className="error">{error}</p> : null}
       {loading ? <p className="feed-status">Carregando mentores...</p> : null}
       {!loading ? (
         <section className="feed-list">
           {mentors.map((mentor) => {
-            const initial = mentor.name.trim().charAt(0).toUpperCase();
             return (
               <article key={mentor.id} className="post-card">
                 <header className="post-author">
-                  <div className="avatar" aria-hidden="true">{initial}</div>
+                  <UserAvatar name={mentor.name} photoUrl={mentor.photoUrl} />
                   <div className="post-author-text">
                     <strong>{mentor.name}</strong>
                     <p className="post-meta">{mentor.headline ?? "Mentor"}</p>

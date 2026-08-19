@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { apiErrorMessage } from "@/lib/api";
 import { getStoredUser } from "@/lib/auth";
+import { HelpTooltip } from "@/components/help/HelpTooltip";
 import {
   cancelEnrollment,
   enrollmentStatusLabel,
@@ -94,7 +95,14 @@ export function RequestMentorshipCard({ mentorId, sessionPrice, blocked = false 
 
   return (
     <section className="enrollment-card">
-      <h2>Solicitar mentoria</h2>
+      <h2 className="help-heading">
+        Solicitar mentoria
+        <HelpTooltip
+          text="Explique brevemente seus objetivos para que o mentor possa avaliar sua solicitação."
+          href="/ajuda/mentorias"
+          label="Ajuda sobre solicitar mentoria"
+        />
+      </h2>
       {sessionPrice != null && Number(sessionPrice) > 0 ? (
         <p className="post-meta">Valor da sessão: {formatMoney(Number(sessionPrice))}</p>
       ) : (
@@ -126,6 +134,10 @@ export function RequestMentorshipCard({ mentorId, sessionPrice, blocked = false 
               placeholder="Conte rapidamente o que você busca nesta mentoria"
             />
           </label>
+          <p className="help-hint">
+            <span aria-hidden="true">ⓘ</span>
+            Explique brevemente seus objetivos para que o mentor possa avaliar sua solicitação.
+          </p>
           {error ? <p className="error">{error}</p> : null}
           <button className="btn" type="submit" disabled={submitting || loading}>
             {submitting ? "Enviando..." : "Solicitar mentoria"}

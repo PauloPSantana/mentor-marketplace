@@ -47,6 +47,9 @@ public record NotificationResponse(
             case SESSION_COMPLETED -> actorName + " concluiu uma sessão de mentoria";
             case SESSION_NO_SHOW -> actorName + " registrou ausência em uma sessão";
             case SESSION_REMINDER -> "Você tem uma sessão de mentoria em breve";
+            case PAYMENT_PAID -> "O pagamento da mentoria foi confirmado";
+            case PAYMENT_FAILED -> "O pagamento da mentoria falhou";
+            case REVIEW_RECEIVED -> actorName + " avaliou você";
         };
     }
 }

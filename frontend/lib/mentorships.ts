@@ -27,6 +27,7 @@ export type MentorshipRelationship = {
   id: string;
   requestId: string;
   mentoringServiceId: string;
+  mentorProfileId: string;
   serviceName: string;
   status: MentorshipStatus;
   startedAt: string;
@@ -36,6 +37,14 @@ export type MentorshipRelationship = {
   mentor: ParticipantSummary;
   mentee: ParticipantSummary;
   nextSession: MentorshipSession | null;
+  amountDue: number;
+  currency: string;
+  paymentRequired: boolean;
+  paymentSettled: boolean;
+  requiredSessions: number;
+  completedSessions: number;
+  scheduledSessions: number;
+  canComplete: boolean;
 };
 
 export type MentorshipPage = {

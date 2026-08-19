@@ -31,17 +31,20 @@ public class MentorshipRelationshipMapper {
     private final MentorProfileRepository mentorProfileRepository;
     private final UserRepository userRepository;
     private final MentorshipSessionRepository mentorshipSessionRepository;
+    private final MentorshipCompletionPolicy mentorshipCompletionPolicy;
 
     public MentorshipRelationshipMapper(
             MentorshipProductRepository mentorshipProductRepository,
             MentorProfileRepository mentorProfileRepository,
             UserRepository userRepository,
-            MentorshipSessionRepository mentorshipSessionRepository
+            MentorshipSessionRepository mentorshipSessionRepository,
+            MentorshipCompletionPolicy mentorshipCompletionPolicy
     ) {
         this.mentorshipProductRepository = mentorshipProductRepository;
         this.mentorProfileRepository = mentorProfileRepository;
         this.userRepository = userRepository;
         this.mentorshipSessionRepository = mentorshipSessionRepository;
+        this.mentorshipCompletionPolicy = mentorshipCompletionPolicy;
     }
 
     public MentorshipRelationshipResponse toResponse(Mentorship mentorship) {
@@ -102,7 +105,17 @@ public class MentorshipRelationshipMapper {
         MentorshipSessionResponse nextSession = next == null
                 ? null
                 : MentorshipSessionResponse.from(next, mentee);
-        return MentorshipRelationshipResponse.from(mentorship, product.getTitle(), mentor, mentee, nextSession);
+        return MentorshipRelationshipResponse.from(
+                mentorship,
+                product.getTitle(),
+                mentor,
+                mentee,
+                nextSession,
+                context.progressByMentorshipId.getOrDefault(
+                        mentorship.getId(),
+                        mentorshipCompletionPolicy.progress(mentorship, product)
+                )
+        );
     }
 
     private ParticipantSummary otherParticipant(Mentorship mentorship, UUID viewerUserId, Context context) {
@@ -146,13 +159,25 @@ public class MentorshipRelationshipMapper {
         ).distinct().toList();
         Map<UUID, User> usersById = userRepository.findAllByIds(userIds).stream()
                 .collect(Collectors.toMap(User::getId, Function.identity()));
-        return new Context(productsById, profilesById, usersById);
+        Map<UUID, MentorshipProgress> progressByMentorshipId = mentorships.stream()
+                .collect(Collectors.toMap(
+                        Mentorship::getId,
+                        mentorship -> {
+                            MentorshipProduct product = productsById.get(mentorship.getProductId());
+                            if (product == null) {
+                                throw new NotFoundException("Mentoria não encontrada");
+                            }
+                            return mentorshipCompletionPolicy.progress(mentorship, product);
+                        }
+                ));
+        return new Context(productsById, profilesById, usersById, progressByMentorshipId);
     }
 
     private record Context(
             Map<UUID, MentorshipProduct> productsById,
             Map<UUID, MentorProfile> profilesById,
-            Map<UUID, User> usersById
+            Map<UUID, User> usersById,
+            Map<UUID, MentorshipProgress> progressByMentorshipId
     ) {
     }
 }

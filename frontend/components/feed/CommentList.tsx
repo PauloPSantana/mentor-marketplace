@@ -4,6 +4,7 @@ import { useState } from "react";
 import { CommentForm } from "@/components/feed/CommentForm";
 import { deleteComment, formatRelativeTime, createReply, type Comment } from "@/lib/feed";
 import { roleLabel } from "@/lib/auth";
+import { UserAvatar } from "@/components/UserAvatar";
 
 type CommentListProps = {
   postId: string;
@@ -25,7 +26,6 @@ function CommentItem({ postId, comment, currentUserId, depth = 0, onChanged }: C
   const owned = Boolean(currentUserId && currentUserId === comment.authorUserId);
   const deleted = comment.status === "DELETED";
   const canReply = depth === 0 && !deleted;
-  const initial = comment.authorName.trim().charAt(0).toUpperCase();
 
   async function onDelete() {
     if (!window.confirm("Excluir este comentário?")) {
@@ -42,9 +42,7 @@ function CommentItem({ postId, comment, currentUserId, depth = 0, onChanged }: C
   return (
     <div className={`comment-item${depth > 0 ? " comment-reply" : ""}${deleted ? " comment-deleted" : ""}`}>
       <div className="comment-header">
-        <div className="avatar" aria-hidden="true">
-          {initial}
-        </div>
+        <UserAvatar name={comment.authorName} photoUrl={comment.authorPhotoUrl} />
         <div className="comment-body">
           <div className="comment-meta">
             <strong>{comment.authorName}</strong>

@@ -1,5 +1,7 @@
 package br.com.mentorhub.identity.application;
 
+import br.com.mentorhub.identity.domain.PasswordPolicy;
+import br.com.mentorhub.identity.domain.LinkedInProfileParser;
 import br.com.mentorhub.identity.domain.User;
 import br.com.mentorhub.identity.domain.UserRepository;
 import br.com.mentorhub.identity.domain.UserRole;
@@ -28,16 +30,35 @@ public class RegisterUserService {
 
     @Transactional
     public User execute(String name, String email, String password, UserRole role) {
+        return execute(name, email, password, null, role, null, null);
+    }
+
+    @Transactional
+    public User execute(
+            String name,
+            String email,
+            String password,
+            String confirmPassword,
+            UserRole role,
+            String linkedinUrl,
+            String photoUrl
+    ) {
+        PasswordPolicy.validate(password);
+        PasswordPolicy.requireConfirmation(password, confirmPassword);
         String normalizedEmail = email.trim().toLowerCase();
         if (userRepository.existsByEmail(normalizedEmail)) {
             throw new ConflictException("Email já cadastrado");
         }
+        String normalizedLinkedIn = LinkedInProfileParser.normalizeOrNull(linkedinUrl);
 
         User user = User.register(name, normalizedEmail, passwordEncoder.encode(password), role);
+        if (photoUrl != null && !photoUrl.isBlank()) {
+            user.updatePhoto(photoUrl.trim());
+        }
         User saved = userRepository.save(user);
 
         if (saved.getRole() == UserRole.MENTOR) {
-            eventPublisher.publishEvent(new MentorUserRegisteredEvent(saved.getId()));
+            eventPublisher.publishEvent(new MentorUserRegisteredEvent(saved.getId(), normalizedLinkedIn, photoUrl));
         }
 
         return saved;

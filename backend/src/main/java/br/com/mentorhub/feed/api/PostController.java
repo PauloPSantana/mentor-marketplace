@@ -10,10 +10,13 @@ import br.com.mentorhub.feed.application.ListFeedService;
 import br.com.mentorhub.feed.application.PostResponseMapper;
 import br.com.mentorhub.feed.application.PostService;
 import br.com.mentorhub.feed.domain.Post;
+import br.com.mentorhub.feed.application.PostImageStorage;
+import br.com.mentorhub.shared.exception.BusinessException;
 import br.com.mentorhub.shared.security.SecurityUtils;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,7 +27,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.UUID;
 
 @RestController
@@ -36,19 +41,22 @@ public class PostController {
     private final ListFeedService listFeedService;
     private final PostResponseMapper postResponseMapper;
     private final PostService postService;
+    private final PostImageStorage postImageStorage;
 
     public PostController(
             CreatePostService createPostService,
             GetPostService getPostService,
             ListFeedService listFeedService,
             PostResponseMapper postResponseMapper,
-            PostService postService
+            PostService postService,
+            PostImageStorage postImageStorage
     ) {
         this.createPostService = createPostService;
         this.getPostService = getPostService;
         this.listFeedService = listFeedService;
         this.postResponseMapper = postResponseMapper;
         this.postService = postService;
+        this.postImageStorage = postImageStorage;
     }
 
     @PostMapping
@@ -91,5 +99,21 @@ public class PostController {
     public ResponseEntity<Void> delete(@PathVariable UUID id) {
         postService.delete(id, SecurityUtils.requireCurrentUserId());
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping(value = "/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ImageUploadResponse> uploadImage(@RequestParam("file") MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new BusinessException("INVALID_IMAGE", "Selecione uma imagem para enviar");
+        }
+        try {
+            String url = postImageStorage.save(file.getBytes());
+            return ResponseEntity.ok(new ImageUploadResponse(url));
+        } catch (IOException ex) {
+            throw new BusinessException("INVALID_IMAGE", "Não foi possível ler a imagem enviada");
+        }
+    }
+
+    public record ImageUploadResponse(String url) {
     }
 }

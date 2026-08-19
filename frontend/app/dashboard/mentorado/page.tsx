@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { EnrollmentList, sortEnrollments } from "@/components/enrollments/EnrollmentList";
 import { MentorshipList } from "@/components/mentorships/MentorshipList";
+import { EditAccountName } from "@/components/EditAccountName";
+import { HelpTooltip } from "@/components/help/HelpTooltip";
 import { apiErrorMessage } from "@/lib/api";
 import { clearAuthSession, getStoredUser, roleLabel, type StoredUser } from "@/lib/auth";
 import { listSentMentorshipRequests, type Enrollment } from "@/lib/enrollments";
@@ -45,11 +47,20 @@ export default function MentoradoDashboardPage() {
   return (
     <main className="container" style={{ padding: "3rem 0" }}>
       <h1>Dashboard do mentorado</h1>
-      <p>
-        Olá, {user.name}. <span className="role-badge">{roleLabel(user.role)}</span>
+      <p style={{ display: "flex", alignItems: "center", gap: "0.45rem", flexWrap: "wrap" }}>
+        Olá, {user.name}
+        <EditAccountName user={user} onUpdated={setUser} />
+        <span className="role-badge">{roleLabel(user.role)}</span>
       </p>
       <section className="enrollment-section">
-        <h2>Minhas solicitações</h2>
+        <h2 className="help-heading">
+          Minhas solicitações
+          <HelpTooltip
+            text="Acompanhe pedidos pendentes, aceitos ou recusados. Você pode cancelar enquanto estiver pendente."
+            href="/ajuda/mentorias"
+            label="Ajuda sobre solicitações"
+          />
+        </h2>
         {error ? <p className="error">{error}</p> : null}
         {loading ? <p className="feed-status">Carregando solicitações...</p> : (
           <EnrollmentList items={enrollments} perspective="MENTEE" onChange={(items) => setEnrollments(sortEnrollments(items))} />
