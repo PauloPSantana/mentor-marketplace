@@ -1,0 +1,18 @@
+# Copie para mail-local.yml (não commitar) e preencha com uma senha de app do Gmail.
+# Google Conta → Segurança → Verificação em duas etapas → Senhas de app
+spring:
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: seu-email@gmail.com
+    password: xxxx xxxx xxxx xxxx
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+mentorhub:
+  mail:
+    from: Mentor Marketplace <seu-email@gmail.com>

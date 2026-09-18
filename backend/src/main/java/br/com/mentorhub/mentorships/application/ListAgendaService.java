@@ -1,6 +1,9 @@
 package br.com.mentorhub.mentorships.application;
 
+import br.com.mentorhub.identity.domain.User;
 import br.com.mentorhub.identity.domain.UserRepository;
+import br.com.mentorhub.identity.domain.UserRole;
+import br.com.mentorhub.institutions.domain.InstitutionRepository;
 import br.com.mentorhub.mentorships.api.dto.MentorshipSessionResponse;
 import br.com.mentorhub.mentorships.domain.Mentorship;
 import br.com.mentorhub.mentorships.domain.MentorshipRepository;
@@ -25,17 +28,20 @@ public class ListAgendaService {
     private final MentorshipRepository mentorshipRepository;
     private final MentorshipSessionRepository mentorshipSessionRepository;
     private final UserRepository userRepository;
+    private final InstitutionRepository institutionRepository;
     private final MentorshipRelationshipMapper mentorshipRelationshipMapper;
 
     public ListAgendaService(
             MentorshipRepository mentorshipRepository,
             MentorshipSessionRepository mentorshipSessionRepository,
             UserRepository userRepository,
+            InstitutionRepository institutionRepository,
             MentorshipRelationshipMapper mentorshipRelationshipMapper
     ) {
         this.mentorshipRepository = mentorshipRepository;
         this.mentorshipSessionRepository = mentorshipSessionRepository;
         this.userRepository = userRepository;
+        this.institutionRepository = institutionRepository;
         this.mentorshipRelationshipMapper = mentorshipRelationshipMapper;
     }
 
@@ -77,6 +83,14 @@ public class ListAgendaService {
     }
 
     private Map<UUID, Mentorship> loadMentorships(UUID currentUserId) {
+        User user = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new NotFoundException("Usuário não encontrado"));
+        if (user.getRole() == UserRole.INSTITUTION) {
+            return institutionRepository.findByOwnerUserId(currentUserId)
+                    .map(institution -> mentorshipRepository.findByInstitutionId(institution.getId()).stream()
+                            .collect(Collectors.toMap(Mentorship::getId, Function.identity(), (first, ignored) -> first)))
+                    .orElseGet(Map::of);
+        }
         return Stream.concat(
                         mentorshipRepository.findByMentorUserId(currentUserId).stream(),
                         mentorshipRepository.findByMenteeUserId(currentUserId).stream()

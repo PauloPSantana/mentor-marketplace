@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
+import { apiBaseUrl } from "@/lib/api";
 
 export function mediaUrl(path: string | null | undefined, version?: string | number | null): string | null {
   if (!path) {
@@ -10,7 +10,7 @@ export function mediaUrl(path: string | null | undefined, version?: string | num
   }
   const resolved = trimmed.startsWith("http://") || trimmed.startsWith("https://")
     ? trimmed
-    : `${API_URL}${trimmed.startsWith("/") ? trimmed : `/${trimmed}`}`;
+    : `${apiBaseUrl()}${trimmed.startsWith("/") ? trimmed : `/${trimmed}`}`;
   if (!version) {
     return resolved;
   }

@@ -23,6 +23,10 @@ backend/.mvn/wrapper/maven-wrapper.jar
 .env.local
 .env.*.local
 *.pem
+google-local.yml
+backend/google-local.yml
+mail-local.yml
+backend/mail-local.yml
 
 # logs / OS
 *.log

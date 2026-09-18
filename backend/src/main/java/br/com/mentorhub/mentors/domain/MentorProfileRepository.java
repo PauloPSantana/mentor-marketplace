@@ -20,4 +20,6 @@ public interface MentorProfileRepository {
     boolean existsByUserId(UUID userId);
 
     List<MentorProfile> findAllActive();
+
+    List<MentorProfile> findByInstitutionId(UUID institutionId);
 }

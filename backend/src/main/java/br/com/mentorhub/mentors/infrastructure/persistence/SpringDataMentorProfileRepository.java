@@ -16,4 +16,6 @@ public interface SpringDataMentorProfileRepository extends JpaRepository<MentorP
     boolean existsByUserId(UUID userId);
 
     List<MentorProfileJpaEntity> findByActiveTrueOrderByUpdatedAtDesc();
+
+    List<MentorProfileJpaEntity> findByInstitutionId(UUID institutionId);
 }

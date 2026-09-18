@@ -1,0 +1,4 @@
+google:
+  client-id: SEU_CLIENT_ID.apps.googleusercontent.com
+  client-secret: SEU_CLIENT_SECRET
+  redirect-uri: http://localhost:8080/api/integrations/google/callback

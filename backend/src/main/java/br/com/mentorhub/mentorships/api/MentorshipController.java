@@ -1,10 +1,12 @@
 package br.com.mentorhub.mentorships.api;
 
+import br.com.mentorhub.mentorships.api.dto.AssignMentorshipRequest;
 import br.com.mentorhub.mentorships.api.dto.CreateSessionRequest;
 import br.com.mentorhub.mentorships.api.dto.MentorshipPageResponse;
 import br.com.mentorhub.mentorships.api.dto.MentorshipProductResponse;
 import br.com.mentorhub.mentorships.api.dto.MentorshipRelationshipResponse;
 import br.com.mentorhub.mentorships.api.dto.MentorshipSessionResponse;
+import br.com.mentorhub.mentorships.application.AssignMentorshipService;
 import br.com.mentorhub.mentorships.application.CreateSessionService;
 import br.com.mentorhub.mentorships.application.ListMentorshipSessionsService;
 import br.com.mentorhub.mentorships.application.ListMentorshipsService;
@@ -15,6 +17,7 @@ import br.com.mentorhub.shared.security.SecurityUtils;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -33,6 +36,7 @@ public class MentorshipController {
 
     private final ListMentorshipProductsService listMentorshipProductsService;
     private final ListMentorshipsService listMentorshipsService;
+    private final AssignMentorshipService assignMentorshipService;
     private final UpdateMentorshipStatusService updateMentorshipStatusService;
     private final CreateSessionService createSessionService;
     private final ListMentorshipSessionsService listMentorshipSessionsService;
@@ -40,12 +44,14 @@ public class MentorshipController {
     public MentorshipController(
             ListMentorshipProductsService listMentorshipProductsService,
             ListMentorshipsService listMentorshipsService,
+            AssignMentorshipService assignMentorshipService,
             UpdateMentorshipStatusService updateMentorshipStatusService,
             CreateSessionService createSessionService,
             ListMentorshipSessionsService listMentorshipSessionsService
     ) {
         this.listMentorshipProductsService = listMentorshipProductsService;
         this.listMentorshipsService = listMentorshipsService;
+        this.assignMentorshipService = assignMentorshipService;
         this.updateMentorshipStatusService = updateMentorshipStatusService;
         this.createSessionService = createSessionService;
         this.listMentorshipSessionsService = listMentorshipSessionsService;
@@ -72,6 +78,23 @@ public class MentorshipController {
             @RequestParam(defaultValue = "20") int size
     ) {
         return ResponseEntity.ok(listMentorshipsService.asMentee(SecurityUtils.requireCurrentUserId(), status, page, size));
+    }
+
+    @GetMapping("/as-institution")
+    @PreAuthorize("hasRole('INSTITUTION')")
+    public ResponseEntity<MentorshipPageResponse> asInstitution(
+            @RequestParam(required = false) MentorshipStatus status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        return ResponseEntity.ok(listMentorshipsService.asInstitution(SecurityUtils.requireCurrentUserId(), status, page, size));
+    }
+
+    @PostMapping("/assignments")
+    @PreAuthorize("hasAnyRole('MENTOR','INSTITUTION')")
+    public ResponseEntity<MentorshipRelationshipResponse> assign(@Valid @RequestBody AssignMentorshipRequest request) {
+        MentorshipRelationshipResponse created = assignMentorshipService.execute(SecurityUtils.requireCurrentUserId(), request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
     @GetMapping("/relationships/{id}")

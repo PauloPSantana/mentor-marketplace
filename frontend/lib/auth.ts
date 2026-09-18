@@ -52,6 +52,8 @@ export function roleLabel(role: string): string {
       return "Mentor";
     case "MENTEE":
       return "Mentorado";
+    case "INSTITUTION":
+      return "Instituição";
     case "ADMIN":
       return "Admin";
     default:
@@ -60,5 +62,7 @@ export function roleLabel(role: string): string {
 }
 
 export function dashboardPath(role: string): string {
-  return role === "MENTOR" ? "/dashboard/mentor" : "/dashboard/mentorado";
+  if (role === "MENTOR") return "/dashboard/mentor";
+  if (role === "INSTITUTION") return "/dashboard/instituicao";
+  return "/dashboard/mentorado";
 }

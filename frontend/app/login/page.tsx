@@ -50,7 +50,7 @@ export default function LoginPage() {
           label="Ajuda sobre login"
         />
       </h1>
-      <p style={{ marginBottom: "1.5rem" }}>Acesse sua conta de mentor ou mentorado.</p>
+        <p style={{ marginBottom: "1.5rem" }}>Acesse sua conta de mentor, mentorado ou instituição.</p>
       <form className="card-form" onSubmit={onSubmit} style={{ display: "grid", gap: "1rem" }}>
         <label>
           Email

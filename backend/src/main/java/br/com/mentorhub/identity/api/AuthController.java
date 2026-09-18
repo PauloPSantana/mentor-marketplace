@@ -61,7 +61,9 @@ public class AuthController {
                 request.confirmPassword(),
                 request.role(),
                 request.linkedinUrl(),
-                request.photoUrl()
+                request.photoUrl(),
+                request.invitationToken(),
+                request.institutionName()
         );
         return ResponseEntity.status(HttpStatus.CREATED).body(UserResponse.from(user));
     }

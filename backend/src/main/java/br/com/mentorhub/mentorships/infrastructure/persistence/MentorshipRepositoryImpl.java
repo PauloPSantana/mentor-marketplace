@@ -81,6 +81,43 @@ public class MentorshipRepositoryImpl implements MentorshipRepository {
                 .toList();
     }
 
+    @Override
+    public List<Mentorship> findByMentorUserIdIn(Collection<UUID> mentorUserIds) {
+        if (mentorUserIds == null || mentorUserIds.isEmpty()) {
+            return List.of();
+        }
+        return springDataMentorshipRepository.findByMentorUserIdIn(mentorUserIds).stream()
+                .map(this::toDomain)
+                .toList();
+    }
+
+    @Override
+    public boolean existsOpenByMentorUserIdAndMenteeUserId(UUID mentorUserId, UUID menteeUserId) {
+        return springDataMentorshipRepository.existsByMentorUserIdAndMenteeUserIdAndStatusIn(
+                mentorUserId,
+                menteeUserId,
+                List.of(MentorshipStatus.PENDING, MentorshipStatus.ACTIVE, MentorshipStatus.PAUSED)
+        );
+    }
+
+    @Override
+    public Page<Mentorship> findByInstitutionId(UUID institutionId, MentorshipStatus status, Pageable pageable) {
+        Page<MentorshipJpaEntity> page = status == null
+                ? springDataMentorshipRepository.findByInstitutionIdOrderByStartedAtDesc(institutionId, pageable)
+                : springDataMentorshipRepository.findByInstitutionIdAndStatusOrderByStartedAtDesc(institutionId, status, pageable);
+        return page.map(this::toDomain);
+    }
+
+    @Override
+    public List<Mentorship> findByInstitutionId(UUID institutionId) {
+        if (institutionId == null) {
+            return List.of();
+        }
+        return springDataMentorshipRepository.findByInstitutionId(institutionId).stream()
+                .map(this::toDomain)
+                .toList();
+    }
+
     private MentorshipJpaEntity toEntity(Mentorship mentorship) {
         MentorshipJpaEntity entity = new MentorshipJpaEntity();
         entity.setId(mentorship.getId());
@@ -89,6 +126,8 @@ public class MentorshipRepositoryImpl implements MentorshipRepository {
         entity.setMentorProfileId(mentorship.getMentorProfileId());
         entity.setMentorUserId(mentorship.getMentorUserId());
         entity.setProductId(mentorship.getProductId());
+        entity.setInstitutionId(mentorship.getInstitutionId());
+        entity.setProgram(mentorship.getProgram());
         entity.setStatus(mentorship.getStatus());
         entity.setStartedAt(mentorship.getStartedAt());
         entity.setPausedAt(mentorship.getPausedAt());
@@ -108,6 +147,8 @@ public class MentorshipRepositoryImpl implements MentorshipRepository {
                 entity.getMentorProfileId(),
                 entity.getMentorUserId(),
                 entity.getProductId(),
+                entity.getInstitutionId(),
+                entity.getProgram(),
                 entity.getStatus(),
                 entity.getStartedAt(),
                 entity.getPausedAt(),

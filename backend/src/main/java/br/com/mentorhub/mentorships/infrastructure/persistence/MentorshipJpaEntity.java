@@ -18,7 +18,7 @@ public class MentorshipJpaEntity {
     @Id
     private UUID id;
 
-    @Column(name = "enrollment_id", nullable = false, unique = true)
+    @Column(name = "enrollment_id", unique = true)
     private UUID enrollmentId;
 
     @Column(name = "mentee_user_id", nullable = false)
@@ -30,8 +30,14 @@ public class MentorshipJpaEntity {
     @Column(name = "mentor_user_id", nullable = false)
     private UUID mentorUserId;
 
-    @Column(name = "product_id", nullable = false)
+    @Column(name = "product_id")
     private UUID productId;
+
+    @Column(name = "institution_id")
+    private UUID institutionId;
+
+    @Column(name = "program", length = 160)
+    private String program;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
@@ -107,6 +113,22 @@ public class MentorshipJpaEntity {
 
     public void setProductId(UUID productId) {
         this.productId = productId;
+    }
+
+    public UUID getInstitutionId() {
+        return institutionId;
+    }
+
+    public void setInstitutionId(UUID institutionId) {
+        this.institutionId = institutionId;
+    }
+
+    public String getProgram() {
+        return program;
+    }
+
+    public void setProgram(String program) {
+        this.program = program;
     }
 
     public MentorshipStatus getStatus() {

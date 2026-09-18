@@ -1,5 +1,6 @@
 package br.com.mentorhub.mentorships.domain;
 
+import br.com.mentorhub.mentorships.domain.MeetingProvider;
 import br.com.mentorhub.shared.exception.BusinessException;
 
 import java.time.Duration;
@@ -11,6 +12,7 @@ public class MentorshipSession {
 
     private static final int MAX_NOTES = 2000;
     private static final int MAX_MEETING_URL = 500;
+    private static final int MAX_START_URL = 1000;
     private static final int MAX_CANCEL_REASON = 500;
 
     private final UUID id;
@@ -28,6 +30,13 @@ public class MentorshipSession {
     private final String cancelReason;
     private final Instant reminder24hSentAt;
     private final Instant reminder1hSentAt;
+    private final Instant reminder10mSentAt;
+    private final String zoomMeetingId;
+    private final String zoomStartUrl;
+    private final ZoomMeetingStatus zoomStatus;
+    private final Instant zoomStartedAt;
+    private final Instant zoomEndedAt;
+    private final MeetingProvider meetingProvider;
     private final Instant createdAt;
     private final Instant updatedAt;
 
@@ -47,6 +56,13 @@ public class MentorshipSession {
             String cancelReason,
             Instant reminder24hSentAt,
             Instant reminder1hSentAt,
+            Instant reminder10mSentAt,
+            String zoomMeetingId,
+            String zoomStartUrl,
+            ZoomMeetingStatus zoomStatus,
+            Instant zoomStartedAt,
+            Instant zoomEndedAt,
+            MeetingProvider meetingProvider,
             Instant createdAt,
             Instant updatedAt
     ) {
@@ -65,6 +81,13 @@ public class MentorshipSession {
         this.cancelReason = cancelReason;
         this.reminder24hSentAt = reminder24hSentAt;
         this.reminder1hSentAt = reminder1hSentAt;
+        this.reminder10mSentAt = reminder10mSentAt;
+        this.zoomMeetingId = zoomMeetingId;
+        this.zoomStartUrl = zoomStartUrl;
+        this.zoomStatus = zoomStatus;
+        this.zoomStartedAt = zoomStartedAt;
+        this.zoomEndedAt = zoomEndedAt;
+        this.meetingProvider = meetingProvider;
         this.createdAt = Objects.requireNonNull(createdAt);
         this.updatedAt = Objects.requireNonNull(updatedAt);
     }
@@ -79,27 +102,23 @@ public class MentorshipSession {
             int maxDurationMinutes
     ) {
         Instant now = Instant.now();
-        if (!scheduledAt.isAfter(now)) {
-            throw new BusinessException("INVALID_SESSION_TIME", "A sessão precisa ser agendada no futuro");
-        }
-        if (durationMinutes <= 0) {
-            throw new BusinessException("INVALID_SESSION_DURATION", "Duração da sessão deve ser positiva");
-        }
-        if (durationMinutes > maxDurationMinutes) {
-            throw new BusinessException(
-                    "INVALID_SESSION_DURATION",
-                    "Duração da sessão deve ser de no máximo " + maxDurationMinutes + " minutos"
-            );
-        }
-        return new MentorshipSession(
+        validateSchedule(scheduledAt, durationMinutes, maxDurationMinutes, now);
+        return restore(
                 UUID.randomUUID(),
                 mentorshipId,
                 scheduledAt,
                 durationMinutes,
-                normalizeUrl(meetingUrl),
+                normalizeUrl(meetingUrl, MAX_MEETING_URL, "INVALID_MEETING_URL", "Link da reunião deve ter no máximo 500 caracteres"),
                 MentorshipSessionStatus.SCHEDULED,
                 normalizeNotes(notes),
                 createdByUserId,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
                 null,
                 null,
                 null,
@@ -128,6 +147,13 @@ public class MentorshipSession {
             String cancelReason,
             Instant reminder24hSentAt,
             Instant reminder1hSentAt,
+            Instant reminder10mSentAt,
+            String zoomMeetingId,
+            String zoomStartUrl,
+            ZoomMeetingStatus zoomStatus,
+            Instant zoomStartedAt,
+            Instant zoomEndedAt,
+            MeetingProvider meetingProvider,
             Instant createdAt,
             Instant updatedAt
     ) {
@@ -147,8 +173,59 @@ public class MentorshipSession {
                 cancelReason,
                 reminder24hSentAt,
                 reminder1hSentAt,
+                reminder10mSentAt,
+                zoomMeetingId,
+                zoomStartUrl,
+                zoomStatus,
+                zoomStartedAt,
+                zoomEndedAt,
+                meetingProvider,
                 createdAt,
                 updatedAt
+        );
+    }
+
+    public MentorshipSession attachZoomMeeting(String meetingId, String joinUrl, String startUrl) {
+        return attachConference(MeetingProvider.ZOOM, meetingId, joinUrl, startUrl);
+    }
+
+    public MentorshipSession attachConference(
+            MeetingProvider provider,
+            String meetingId,
+            String joinUrl,
+            String startUrl
+    ) {
+        if (provider == null) {
+            throw new BusinessException("INVALID_MEETING_PROVIDER", "Provedor da reunião é obrigatório");
+        }
+        if (meetingId == null || meetingId.isBlank()) {
+            throw new BusinessException("INVALID_MEETING", "Identificador da reunião é obrigatório");
+        }
+        ZoomMeetingStatus nextStatus = ZoomMeetingStatus.CREATED;
+        return restore(
+                id, mentorshipId, scheduledAt, durationMinutes,
+                normalizeUrl(joinUrl, MAX_MEETING_URL, "INVALID_MEETING_URL", "Link da reunião deve ter no máximo 500 caracteres"),
+                status, notes, createdByUserId,
+                completedAt, completedByUserId, cancelledAt, cancelledByUserId, cancelReason,
+                reminder24hSentAt, reminder1hSentAt, reminder10mSentAt,
+                meetingId.trim(),
+                normalizeUrl(startUrl, MAX_START_URL, "INVALID_MEETING_URL", "Link de anfitrião deve ter no máximo 1000 caracteres"),
+                nextStatus, null, null, provider, createdAt, Instant.now()
+        );
+    }
+
+    public MentorshipSession reschedule(Instant newScheduledAt, int newDurationMinutes, int maxDurationMinutes) {
+        requireScheduled();
+        if (zoomStatus == ZoomMeetingStatus.STARTED || zoomStatus == ZoomMeetingStatus.ENDED) {
+            throw new BusinessException("SESSION_ALREADY_STARTED", "Não é possível reagendar após o início da reunião");
+        }
+        validateSchedule(newScheduledAt, newDurationMinutes, maxDurationMinutes, Instant.now());
+        Instant now = Instant.now();
+        return restore(
+                id, mentorshipId, newScheduledAt, newDurationMinutes, meetingUrl, status, notes, createdByUserId,
+                completedAt, completedByUserId, cancelledAt, cancelledByUserId, cancelReason,
+                null, null, null,
+                zoomMeetingId, zoomStartUrl, zoomStatus, zoomStartedAt, zoomEndedAt, meetingProvider, createdAt, now
         );
     }
 
@@ -163,18 +240,21 @@ public class MentorshipSession {
                 id, mentorshipId, scheduledAt, durationMinutes, meetingUrl,
                 MentorshipSessionStatus.COMPLETED, mergedNotes, createdByUserId,
                 now, actorUserId, cancelledAt, cancelledByUserId, cancelReason,
-                reminder24hSentAt, reminder1hSentAt, createdAt, now
+                reminder24hSentAt, reminder1hSentAt, reminder10mSentAt,
+                zoomMeetingId, zoomStartUrl, zoomStatus, zoomStartedAt, zoomEndedAt, meetingProvider, createdAt, now
         );
     }
 
     public MentorshipSession cancel(UUID actorUserId, String reason) {
         requireScheduled();
         Instant now = Instant.now();
+        ZoomMeetingStatus nextZoom = zoomMeetingId == null ? zoomStatus : ZoomMeetingStatus.DELETED;
         return restore(
                 id, mentorshipId, scheduledAt, durationMinutes, meetingUrl,
                 MentorshipSessionStatus.CANCELLED, notes, createdByUserId,
                 completedAt, completedByUserId, now, actorUserId, normalizeReason(reason),
-                reminder24hSentAt, reminder1hSentAt, createdAt, now
+                reminder24hSentAt, reminder1hSentAt, reminder10mSentAt,
+                zoomMeetingId, zoomStartUrl, nextZoom, zoomStartedAt, zoomEndedAt, meetingProvider, createdAt, now
         );
     }
 
@@ -188,7 +268,8 @@ public class MentorshipSession {
                 id, mentorshipId, scheduledAt, durationMinutes, meetingUrl,
                 MentorshipSessionStatus.NO_SHOW, notes, createdByUserId,
                 now, actorUserId, cancelledAt, cancelledByUserId, cancelReason,
-                reminder24hSentAt, reminder1hSentAt, createdAt, now
+                reminder24hSentAt, reminder1hSentAt, reminder10mSentAt,
+                zoomMeetingId, zoomStartUrl, zoomStatus, zoomStartedAt, zoomEndedAt, meetingProvider, createdAt, now
         );
     }
 
@@ -196,7 +277,8 @@ public class MentorshipSession {
         return restore(
                 id, mentorshipId, scheduledAt, durationMinutes, meetingUrl, status, notes, createdByUserId,
                 completedAt, completedByUserId, cancelledAt, cancelledByUserId, cancelReason,
-                sentAt, reminder1hSentAt, createdAt, sentAt
+                sentAt, reminder1hSentAt, reminder10mSentAt,
+                zoomMeetingId, zoomStartUrl, zoomStatus, zoomStartedAt, zoomEndedAt, meetingProvider, createdAt, sentAt
         );
     }
 
@@ -204,7 +286,44 @@ public class MentorshipSession {
         return restore(
                 id, mentorshipId, scheduledAt, durationMinutes, meetingUrl, status, notes, createdByUserId,
                 completedAt, completedByUserId, cancelledAt, cancelledByUserId, cancelReason,
-                reminder24hSentAt, sentAt, createdAt, sentAt
+                reminder24hSentAt, sentAt, reminder10mSentAt,
+                zoomMeetingId, zoomStartUrl, zoomStatus, zoomStartedAt, zoomEndedAt, meetingProvider, createdAt, sentAt
+        );
+    }
+
+    public MentorshipSession markReminder10mSent(Instant sentAt) {
+        return restore(
+                id, mentorshipId, scheduledAt, durationMinutes, meetingUrl, status, notes, createdByUserId,
+                completedAt, completedByUserId, cancelledAt, cancelledByUserId, cancelReason,
+                reminder24hSentAt, reminder1hSentAt, sentAt,
+                zoomMeetingId, zoomStartUrl, zoomStatus, zoomStartedAt, zoomEndedAt, meetingProvider, createdAt, sentAt
+        );
+    }
+
+    public MentorshipSession markZoomStarted(Instant at) {
+        if (!hasZoomMeeting() || !isScheduled()) {
+            return this;
+        }
+        Instant started = at == null ? Instant.now() : at;
+        return restore(
+                id, mentorshipId, scheduledAt, durationMinutes, meetingUrl, status, notes, createdByUserId,
+                completedAt, completedByUserId, cancelledAt, cancelledByUserId, cancelReason,
+                reminder24hSentAt, reminder1hSentAt, reminder10mSentAt,
+                zoomMeetingId, zoomStartUrl, ZoomMeetingStatus.STARTED, started, zoomEndedAt, meetingProvider, createdAt, started
+        );
+    }
+
+    public MentorshipSession markZoomEnded(Instant at) {
+        if (!hasZoomMeeting() || status == MentorshipSessionStatus.CANCELLED) {
+            return this;
+        }
+        Instant ended = at == null ? Instant.now() : at;
+        Instant started = zoomStartedAt == null ? ended : zoomStartedAt;
+        return restore(
+                id, mentorshipId, scheduledAt, durationMinutes, meetingUrl, status, notes, createdByUserId,
+                completedAt, completedByUserId, cancelledAt, cancelledByUserId, cancelReason,
+                reminder24hSentAt, reminder1hSentAt, reminder10mSentAt,
+                zoomMeetingId, zoomStartUrl, ZoomMeetingStatus.ENDED, started, ended, meetingProvider, createdAt, ended
         );
     }
 
@@ -225,6 +344,25 @@ public class MentorshipSession {
         return status == MentorshipSessionStatus.SCHEDULED;
     }
 
+    public boolean hasManagedMeeting() {
+        return zoomMeetingId != null && !zoomMeetingId.isBlank();
+    }
+
+    public boolean hasZoomMeeting() {
+        return hasManagedMeeting() && getMeetingProvider() == MeetingProvider.ZOOM;
+    }
+
+    public MeetingProvider getMeetingProvider() {
+        if (meetingProvider != null) {
+            return meetingProvider;
+        }
+        return hasManagedMeeting() ? MeetingProvider.ZOOM : null;
+    }
+
+    public String getExternalEventId() {
+        return zoomMeetingId;
+    }
+
     public boolean shouldSendReminder24h(Instant now) {
         return isScheduled()
                 && reminder24hSentAt == null
@@ -239,9 +377,31 @@ public class MentorshipSession {
                 && !now.isBefore(scheduledAt.minus(Duration.ofHours(1)));
     }
 
+    public boolean shouldSendReminder10m(Instant now) {
+        return isScheduled()
+                && reminder10mSentAt == null
+                && !scheduledAt.isBefore(now)
+                && !now.isBefore(scheduledAt.minus(Duration.ofMinutes(10)));
+    }
+
     private void requireScheduled() {
         if (status != MentorshipSessionStatus.SCHEDULED) {
             throw new BusinessException("INVALID_SESSION_STATUS", "Somente sessões agendadas podem mudar de estado");
+        }
+    }
+
+    private static void validateSchedule(Instant scheduledAt, int durationMinutes, int maxDurationMinutes, Instant now) {
+        if (!scheduledAt.isAfter(now)) {
+            throw new BusinessException("INVALID_SESSION_TIME", "A sessão precisa ser agendada no futuro");
+        }
+        if (durationMinutes <= 0) {
+            throw new BusinessException("INVALID_SESSION_DURATION", "Duração da sessão deve ser positiva");
+        }
+        if (durationMinutes > maxDurationMinutes) {
+            throw new BusinessException(
+                    "INVALID_SESSION_DURATION",
+                    "Duração da sessão deve ser de no máximo " + maxDurationMinutes + " minutos"
+            );
         }
     }
 
@@ -256,13 +416,13 @@ public class MentorshipSession {
         return trimmed;
     }
 
-    private static String normalizeUrl(String meetingUrl) {
-        if (meetingUrl == null || meetingUrl.isBlank()) {
+    private static String normalizeUrl(String value, int max, String code, String message) {
+        if (value == null || value.isBlank()) {
             return null;
         }
-        String trimmed = meetingUrl.trim();
-        if (trimmed.length() > MAX_MEETING_URL) {
-            throw new BusinessException("INVALID_MEETING_URL", "Link da reunião deve ter no máximo 500 caracteres");
+        String trimmed = value.trim();
+        if (trimmed.length() > max) {
+            throw new BusinessException(code, message);
         }
         return trimmed;
     }
@@ -336,6 +496,30 @@ public class MentorshipSession {
 
     public Instant getReminder1hSentAt() {
         return reminder1hSentAt;
+    }
+
+    public Instant getReminder10mSentAt() {
+        return reminder10mSentAt;
+    }
+
+    public String getZoomMeetingId() {
+        return zoomMeetingId;
+    }
+
+    public String getZoomStartUrl() {
+        return zoomStartUrl;
+    }
+
+    public ZoomMeetingStatus getZoomStatus() {
+        return zoomStatus;
+    }
+
+    public Instant getZoomStartedAt() {
+        return zoomStartedAt;
+    }
+
+    public Instant getZoomEndedAt() {
+        return zoomEndedAt;
     }
 
     public Instant getCreatedAt() {

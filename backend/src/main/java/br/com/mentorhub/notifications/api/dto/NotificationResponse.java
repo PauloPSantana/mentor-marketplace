@@ -47,9 +47,19 @@ public record NotificationResponse(
             case SESSION_COMPLETED -> actorName + " concluiu uma sessão de mentoria";
             case SESSION_NO_SHOW -> actorName + " registrou ausência em uma sessão";
             case SESSION_REMINDER -> "Você tem uma sessão de mentoria em breve";
+            case SESSION_RESCHEDULED -> actorName + " reagendou uma sessão de mentoria";
             case PAYMENT_PAID -> "O pagamento da mentoria foi confirmado";
             case PAYMENT_FAILED -> "O pagamento da mentoria falhou";
             case REVIEW_RECEIVED -> actorName + " avaliou você";
+            case GROUP_CREATED -> actorName + " criou um grupo de mentoria com você";
+            case GROUP_MEMBER_ADDED -> actorName + " adicionou você a um grupo de mentoria";
+            case GROUP_MEMBER_LEFT -> actorName + " saiu de um grupo de mentoria";
+            case ANNOUNCEMENT_PUBLISHED -> actorName + " publicou no mural da mentoria";
+            case ANNOUNCEMENT_LIKED -> actorName + " curtiu seu comunicado no mural";
+            case ANNOUNCEMENT_COMMENTED -> actorName + " comentou no mural da mentoria";
+            case ANNOUNCEMENT_REPLIED -> actorName + " respondeu seu comentário no mural";
+            case STUDY_TASK_ASSIGNED -> actorName + " adicionou uma atividade no seu plano de estudos";
+            case STUDY_PLAN_COMPLETED -> actorName + " concluiu o plano de estudos";
         };
     }
 }

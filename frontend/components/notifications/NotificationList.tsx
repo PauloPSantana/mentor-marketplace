@@ -43,6 +43,16 @@ export function NotificationList({ items, onRead }: NotificationListProps) {
               <Link className="text-btn" href="/dashboard/mentorado">
                 Ver mentoria
               </Link>
+            ) : item.type === "GROUP_CREATED" || item.type === "GROUP_MEMBER_ADDED" || item.type === "GROUP_MEMBER_LEFT"
+              || item.type === "ANNOUNCEMENT_PUBLISHED" || item.type === "ANNOUNCEMENT_LIKED"
+              || item.type === "ANNOUNCEMENT_COMMENTED" || item.type === "ANNOUNCEMENT_REPLIED" ? (
+              <Link className="text-btn" href="/grupos">
+                Ver grupos
+              </Link>
+            ) : item.type === "STUDY_TASK_ASSIGNED" || item.type === "STUDY_PLAN_COMPLETED" ? (
+              <Link className="text-btn" href="/dashboard/mentorado">
+                Ver mentoria
+              </Link>
             ) : item.type.startsWith("SESSION_") ? (
               <Link className="text-btn" href="/agenda">
                 Ver agenda

@@ -42,4 +42,8 @@ public interface SpringDataMentorshipSessionRepository extends JpaRepository<Men
             MentorshipSessionStatus status,
             Instant from
     );
+
+    List<MentorshipSessionJpaEntity> findByMentorshipIdIn(Collection<UUID> mentorshipIds);
+
+    Optional<MentorshipSessionJpaEntity> findByZoomMeetingId(String zoomMeetingId);
 }

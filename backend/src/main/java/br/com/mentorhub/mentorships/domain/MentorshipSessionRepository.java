@@ -32,4 +32,8 @@ public interface MentorshipSessionRepository {
     long countByMentorshipIdAndStatusIn(UUID mentorshipId, Collection<MentorshipSessionStatus> statuses);
 
     List<MentorshipSession> findScheduledForReminders(Instant from);
+
+    List<MentorshipSession> findByMentorshipIdIn(Collection<UUID> mentorshipIds);
+
+    Optional<MentorshipSession> findByZoomMeetingId(String zoomMeetingId);
 }

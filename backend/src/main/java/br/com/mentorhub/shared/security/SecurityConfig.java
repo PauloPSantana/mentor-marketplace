@@ -39,6 +39,8 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
+                                "/",
+                                "/error",
                                 "/actuator/health",
                                 "/actuator/info",
                                 "/v3/api-docs/**",
@@ -47,9 +49,14 @@ public class SecurityConfig {
                                 "/h2-console/**"
                         ).permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/register", "/api/v1/auth/login").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/invitations/**", "/api/v1/mentor-invitations/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/mentor-invitations/*/accept").permitAll()
                         .requestMatchers("/api/v1/auth/linkedin/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/payments/webhook", "/api/v1/payments/webhooks/**").permitAll()
+                        .requestMatchers("/api/v1/zoom/callback").permitAll()
+                        .requestMatchers("/api/integrations/google/callback").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/zoom/webhooks").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/mentors/me").hasRole("MENTOR")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/mentors/me").hasRole("MENTOR")
                         .requestMatchers("/api/v1/mentors/*/enrollments/**").authenticated()
@@ -57,6 +64,7 @@ public class SecurityConfig {
                                 HttpMethod.GET,
                                 "/api/v1/mentorships/as-mentor",
                                 "/api/v1/mentorships/as-mentee",
+                                "/api/v1/mentorships/as-institution",
                                 "/api/v1/mentorships/relationships/**"
                         ).authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/v1/mentors/**", "/api/v1/mentorships/**").permitAll()
@@ -81,7 +89,12 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:3000"));
+        configuration.setAllowedOriginPatterns(List.of(
+                "http://localhost:*",
+                "http://127.0.0.1:*",
+                "http://192.168.*.*:*",
+                "http://10.*.*.*:*"
+        ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);

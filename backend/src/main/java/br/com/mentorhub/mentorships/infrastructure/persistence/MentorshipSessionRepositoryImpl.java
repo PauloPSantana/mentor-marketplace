@@ -107,6 +107,24 @@ public class MentorshipSessionRepositoryImpl implements MentorshipSessionReposit
                 .toList();
     }
 
+    @Override
+    public List<MentorshipSession> findByMentorshipIdIn(Collection<UUID> mentorshipIds) {
+        if (mentorshipIds == null || mentorshipIds.isEmpty()) {
+            return List.of();
+        }
+        return springDataMentorshipSessionRepository.findByMentorshipIdIn(mentorshipIds).stream()
+                .map(this::toDomain)
+                .toList();
+    }
+
+    @Override
+    public Optional<MentorshipSession> findByZoomMeetingId(String zoomMeetingId) {
+        if (zoomMeetingId == null || zoomMeetingId.isBlank()) {
+            return Optional.empty();
+        }
+        return springDataMentorshipSessionRepository.findByZoomMeetingId(zoomMeetingId.trim()).map(this::toDomain);
+    }
+
     private MentorshipSessionJpaEntity toEntity(MentorshipSession session) {
         MentorshipSessionJpaEntity entity = new MentorshipSessionJpaEntity();
         entity.setId(session.getId());
@@ -124,6 +142,13 @@ public class MentorshipSessionRepositoryImpl implements MentorshipSessionReposit
         entity.setCancelReason(session.getCancelReason());
         entity.setReminder24hSentAt(session.getReminder24hSentAt());
         entity.setReminder1hSentAt(session.getReminder1hSentAt());
+        entity.setReminder10mSentAt(session.getReminder10mSentAt());
+        entity.setZoomMeetingId(session.getZoomMeetingId());
+        entity.setZoomStartUrl(session.getZoomStartUrl());
+        entity.setZoomStatus(session.getZoomStatus());
+        entity.setZoomStartedAt(session.getZoomStartedAt());
+        entity.setZoomEndedAt(session.getZoomEndedAt());
+        entity.setMeetingProvider(session.getMeetingProvider());
         entity.setCreatedAt(session.getCreatedAt());
         entity.setUpdatedAt(session.getUpdatedAt());
         return entity;
@@ -146,6 +171,13 @@ public class MentorshipSessionRepositoryImpl implements MentorshipSessionReposit
                 entity.getCancelReason(),
                 entity.getReminder24hSentAt(),
                 entity.getReminder1hSentAt(),
+                entity.getReminder10mSentAt(),
+                entity.getZoomMeetingId(),
+                entity.getZoomStartUrl(),
+                entity.getZoomStatus(),
+                entity.getZoomStartedAt(),
+                entity.getZoomEndedAt(),
+                entity.getMeetingProvider(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()
         );

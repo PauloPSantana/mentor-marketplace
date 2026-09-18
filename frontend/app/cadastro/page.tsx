@@ -11,24 +11,35 @@ type UserResponse = {
   id: string;
   name: string;
   email: string;
-  role: "MENTOR" | "MENTEE" | "ADMIN";
+  role: "MENTOR" | "MENTEE" | "INSTITUTION" | "ADMIN";
 };
 
-type UserRole = "MENTOR" | "MENTEE";
+type UserRole = "MENTOR" | "MENTEE" | "INSTITUTION";
 
 function CadastroForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const initialRole: UserRole = searchParams.get("papel") === "mentor" ? "MENTOR" : "MENTEE";
-  const [role, setRole] = useState<UserRole>(initialRole);
+  const inviteToken = searchParams.get("convite");
+  const [role, setRole] = useState<UserRole>(
+    searchParams.get("papel") === "mentor"
+      ? "MENTOR"
+      : searchParams.get("papel") === "instituicao"
+        ? "INSTITUTION"
+        : "MENTEE"
+  );
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
   useEffect(() => {
-    setRole(searchParams.get("papel") === "mentor" ? "MENTOR" : "MENTEE");
-  }, [searchParams]);
+    if (inviteToken) {
+      router.replace(`/convites/mentor/${inviteToken}`);
+      return;
+    }
+    const papel = searchParams.get("papel");
+    setRole(papel === "mentor" ? "MENTOR" : papel === "instituicao" ? "INSTITUTION" : "MENTEE");
+  }, [inviteToken, router, searchParams]);
 
   const passwordChecks = useMemo(
     () => validatePassword(password, confirmPassword),
@@ -53,7 +64,8 @@ function CadastroForm() {
           email: form.get("email"),
           password,
           confirmPassword,
-          role
+          role,
+          institutionName: role === "INSTITUTION" ? form.get("institutionName") : undefined
         })
       });
       router.push("/login");
@@ -64,20 +76,32 @@ function CadastroForm() {
     }
   }
 
+  const title = role === "MENTOR"
+    ? "Criar conta de mentor"
+    : role === "INSTITUTION"
+      ? "Criar conta da instituição"
+      : "Criar conta";
+
+  if (inviteToken) {
+    return <main className="container" style={{ padding: "3rem 0" }}>Abrindo convite...</main>;
+  }
+
   return (
     <main className="container" style={{ padding: "3rem 0", maxWidth: 520 }}>
       <h1 className="help-heading">
-        {role === "MENTOR" ? "Criar conta de mentor" : "Criar conta"}
+        {title}
         <HelpTooltip
-          text="Escolha Mentorado para buscar mentores ou Mentor para oferecer sessões. A senha precisa ter 8+ caracteres, com letras e números."
+          text="Escolha Mentorado, Mentor ou Instituição. Instituição convida mentores. A senha precisa ter 8+ caracteres, com letras e números."
           href="/ajuda/primeiros-passos"
           label="Ajuda sobre cadastro"
         />
       </h1>
       <p style={{ marginBottom: "1.5rem" }}>
-        {role === "MENTOR"
-          ? "Cadastre-se para oferecer mentorias e aparecer no marketplace."
-          : "Cadastre-se como mentor ou mentorado."}
+        {role === "INSTITUTION"
+          ? "Cadastre a instituição para convidar mentores e acompanhar mentorados."
+          : role === "MENTOR"
+            ? "Cadastre-se para oferecer mentorias e aparecer no marketplace."
+            : "Cadastre-se como mentor, mentorado ou instituição."}
       </p>
       <form className="card-form" onSubmit={onSubmit} style={{ display: "grid", gap: "1rem" }}>
         <label>
@@ -86,8 +110,19 @@ function CadastroForm() {
         </label>
         <label>
           Email
-          <input className="input" name="email" type="email" required />
+          <input
+            className="input"
+            name="email"
+            type="email"
+            required
+          />
         </label>
+        {role === "INSTITUTION" ? (
+          <label>
+            Nome da instituição
+            <input className="input" name="institutionName" required maxLength={160} />
+          </label>
+        ) : null}
         <label>
           Senha
           <input
@@ -124,10 +159,14 @@ function CadastroForm() {
             className="input"
             name="role"
             value={role}
-            onChange={(event) => setRole(event.target.value === "MENTOR" ? "MENTOR" : "MENTEE")}
+            onChange={(event) => {
+              const value = event.target.value;
+              setRole(value === "MENTOR" ? "MENTOR" : value === "INSTITUTION" ? "INSTITUTION" : "MENTEE");
+            }}
           >
             <option value="MENTEE">Mentorado</option>
             <option value="MENTOR">Mentor</option>
+            <option value="INSTITUTION">Instituição / Gestor</option>
           </select>
         </label>
         {error ? <p className="error">{error}</p> : null}

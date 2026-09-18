@@ -94,6 +94,73 @@ class MentorshipSessionTest {
         assertEquals("Imprevisto", cancelled.getCancelReason());
     }
 
+    @Test
+    void shouldAttachZoomMeetingAndExposeHostUrl() {
+        MentorshipSession session = futureSession().attachZoomMeeting(
+                "123456",
+                "https://zoom.us/j/123456",
+                "https://zoom.us/s/123456?zak=host"
+        );
+
+        assertTrue(session.hasZoomMeeting());
+        assertEquals("123456", session.getZoomMeetingId());
+        assertEquals("https://zoom.us/j/123456", session.getMeetingUrl());
+        assertEquals(ZoomMeetingStatus.CREATED, session.getZoomStatus());
+    }
+
+    @Test
+    void shouldAttachGoogleMeetConference() {
+        MentorshipSession session = futureSession().attachConference(
+                MeetingProvider.GOOGLE_MEET,
+                "evt-1",
+                "https://meet.google.com/abc-defg-hij",
+                "https://meet.google.com/abc-defg-hij"
+        );
+
+        assertEquals(MeetingProvider.GOOGLE_MEET, session.getMeetingProvider());
+        assertTrue(session.hasManagedMeeting());
+        assertFalse(session.hasZoomMeeting());
+        assertEquals("https://meet.google.com/abc-defg-hij", session.getMeetingUrl());
+    }
+
+    @Test
+    void shouldRescheduleAndResetReminders() {
+        Instant later = Instant.now().plusSeconds(7200);
+        MentorshipSession session = futureSession()
+                .markReminder24hSent(Instant.now())
+                .reschedule(later, 45, 240);
+
+        assertEquals(later, session.getScheduledAt());
+        assertEquals(45, session.getDurationMinutes());
+        assertEquals(null, session.getReminder24hSentAt());
+        assertEquals(null, session.getReminder10mSentAt());
+    }
+
+    @Test
+    void shouldNotRescheduleAfterZoomStarted() {
+        MentorshipSession started = futureSession()
+                .attachZoomMeeting("99", "https://zoom.us/j/99", "https://zoom.us/s/99")
+                .markZoomStarted(Instant.now());
+
+        assertThrows(BusinessException.class, () -> started.reschedule(Instant.now().plusSeconds(8000), 60, 240));
+    }
+
+    @Test
+    void shouldSendTenMinuteReminder() {
+        MentorshipSession session = MentorshipSession.schedule(
+                UUID.randomUUID(),
+                Instant.now().plusSeconds(8 * 60),
+                60,
+                null,
+                null,
+                UUID.randomUUID(),
+                240
+        );
+
+        assertTrue(session.shouldSendReminder10m(Instant.now()));
+        assertFalse(session.markReminder10mSent(Instant.now()).shouldSendReminder10m(Instant.now()));
+    }
+
     private MentorshipSession futureSession() {
         return MentorshipSession.schedule(
                 UUID.randomUUID(),

@@ -33,11 +33,14 @@ class RegisterUserServiceTest {
     @Mock
     private ApplicationEventPublisher eventPublisher;
 
+    @Mock
+    private MentorInvitationGate mentorInvitationGate;
+
     private RegisterUserService service;
 
     @BeforeEach
     void setUp() {
-        service = new RegisterUserService(userRepository, passwordEncoder, eventPublisher);
+        service = new RegisterUserService(userRepository, passwordEncoder, eventPublisher, mentorInvitationGate);
     }
 
     @Test

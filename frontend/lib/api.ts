@@ -1,4 +1,12 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
+export function apiBaseUrl(): string {
+  if (typeof window !== "undefined") {
+    const host = window.location.hostname;
+    if (host && host !== "localhost" && host !== "127.0.0.1") {
+      return `http://${host}:8080`;
+    }
+  }
+  return process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
+}
 
 export class ApiError extends Error {
   status?: number;
@@ -36,7 +44,9 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
     const isPublicAuth =
       path === "/api/v1/auth/register" ||
       path === "/api/v1/auth/login" ||
-      path.startsWith("/api/v1/auth/linkedin/");
+      path.startsWith("/api/v1/auth/linkedin/") ||
+      path.startsWith("/api/v1/invitations/") ||
+      path.startsWith("/api/v1/mentor-invitations/");
     if (token && !headers.has("Authorization") && !isPublicAuth) {
       headers.set("Authorization", `Bearer ${token}`);
     }
@@ -44,7 +54,7 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
 
   let response: Response;
   try {
-    response = await fetch(`${API_URL}${path}`, {
+    response = await fetch(`${apiBaseUrl()}${path}`, {
       ...init,
       headers
     });

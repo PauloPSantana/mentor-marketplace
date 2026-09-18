@@ -67,6 +67,16 @@ public class MentorProfileRepositoryImpl implements MentorProfileRepository {
                 .toList();
     }
 
+    @Override
+    public List<MentorProfile> findByInstitutionId(UUID institutionId) {
+        if (institutionId == null) {
+            return Collections.emptyList();
+        }
+        return springDataMentorProfileRepository.findByInstitutionId(institutionId).stream()
+                .map(this::toDomain)
+                .toList();
+    }
+
     private MentorProfileJpaEntity toEntity(MentorProfile profile) {
         MentorProfileJpaEntity entity = new MentorProfileJpaEntity();
         entity.setId(profile.getId());
@@ -85,6 +95,7 @@ public class MentorProfileRepositoryImpl implements MentorProfileRepository {
         entity.setRatingAvg(profile.getRatingAvg());
         entity.setRatingCount(profile.getRatingCount());
         entity.setActive(profile.isActive());
+        entity.setInstitutionId(profile.getInstitutionId());
         entity.setCreatedAt(profile.getCreatedAt());
         entity.setUpdatedAt(profile.getUpdatedAt());
         return entity;
@@ -108,6 +119,7 @@ public class MentorProfileRepositoryImpl implements MentorProfileRepository {
                 entity.getRatingAvg(),
                 entity.getRatingCount(),
                 entity.isActive(),
+                entity.getInstitutionId(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()
         );

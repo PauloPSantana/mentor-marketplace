@@ -34,6 +34,9 @@ public class MentorshipCompletionPolicy {
     }
 
     public MentorshipProgress progress(Mentorship mentorship) {
+        if (mentorship.getProductId() == null) {
+            return assignedProgress(mentorship);
+        }
         MentorshipProduct product = mentorshipProductRepository.findById(mentorship.getProductId())
                 .orElseThrow(() -> new NotFoundException("Serviço de mentoria não encontrado"));
         return progress(mentorship, product);
@@ -62,6 +65,27 @@ public class MentorshipCompletionPolicy {
                 completedSessions,
                 scheduledSessions,
                 mentorship.isMutable() && ready
+        );
+    }
+
+    private MentorshipProgress assignedProgress(Mentorship mentorship) {
+        int completedSessions = (int) mentorshipSessionRepository.countByMentorshipIdAndStatusIn(
+                mentorship.getId(),
+                COMPLETED
+        );
+        int scheduledSessions = (int) mentorshipSessionRepository.countByMentorshipIdAndStatusIn(
+                mentorship.getId(),
+                SCHEDULED
+        );
+        return new MentorshipProgress(
+                BigDecimal.ZERO,
+                "BRL",
+                false,
+                true,
+                0,
+                completedSessions,
+                scheduledSessions,
+                mentorship.isMutable() && scheduledSessions == 0
         );
     }
 

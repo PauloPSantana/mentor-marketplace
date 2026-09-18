@@ -62,6 +62,10 @@ public class SendSessionReminderService {
             notify = true;
             updated = updated.markReminder1hSent(now);
         }
+        if (updated.shouldSendReminder10m(now)) {
+            notify = true;
+            updated = updated.markReminder10mSent(now);
+        }
         if (updated != session) {
             mentorshipSessionRepository.save(updated);
         }

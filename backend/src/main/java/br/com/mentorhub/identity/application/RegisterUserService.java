@@ -17,20 +17,23 @@ public class RegisterUserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final ApplicationEventPublisher eventPublisher;
+    private final MentorInvitationGate mentorInvitationGate;
 
     public RegisterUserService(
             UserRepository userRepository,
             PasswordEncoder passwordEncoder,
-            ApplicationEventPublisher eventPublisher
+            ApplicationEventPublisher eventPublisher,
+            MentorInvitationGate mentorInvitationGate
     ) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.eventPublisher = eventPublisher;
+        this.mentorInvitationGate = mentorInvitationGate;
     }
 
     @Transactional
     public User execute(String name, String email, String password, UserRole role) {
-        return execute(name, email, password, null, role, null, null);
+        return execute(name, email, password, null, role, null, null, null, null);
     }
 
     @Transactional
@@ -43,9 +46,29 @@ public class RegisterUserService {
             String linkedinUrl,
             String photoUrl
     ) {
+        return execute(name, email, password, confirmPassword, role, linkedinUrl, photoUrl, null, null);
+    }
+
+    @Transactional
+    public User execute(
+            String name,
+            String email,
+            String password,
+            String confirmPassword,
+            UserRole role,
+            String linkedinUrl,
+            String photoUrl,
+            String invitationToken,
+            String institutionName
+    ) {
         PasswordPolicy.validate(password);
         PasswordPolicy.requireConfirmation(password, confirmPassword);
         String normalizedEmail = email.trim().toLowerCase();
+        String token = invitationToken == null || invitationToken.isBlank() ? null : invitationToken.trim();
+        if (token != null) {
+            mentorInvitationGate.assertAcceptable(token, normalizedEmail);
+            role = UserRole.MENTOR;
+        }
         if (userRepository.existsByEmail(normalizedEmail)) {
             throw new ConflictException("Email já cadastrado");
         }
@@ -58,7 +81,18 @@ public class RegisterUserService {
         User saved = userRepository.save(user);
 
         if (saved.getRole() == UserRole.MENTOR) {
-            eventPublisher.publishEvent(new MentorUserRegisteredEvent(saved.getId(), normalizedLinkedIn, photoUrl));
+            eventPublisher.publishEvent(new MentorUserRegisteredEvent(
+                    saved.getId(),
+                    normalizedLinkedIn,
+                    photoUrl,
+                    token
+            ));
+        }
+        if (saved.getRole() == UserRole.INSTITUTION) {
+            eventPublisher.publishEvent(new InstitutionUserRegisteredEvent(
+                    saved.getId(),
+                    institutionName == null || institutionName.isBlank() ? saved.getName() : institutionName.trim()
+            ));
         }
 
         return saved;

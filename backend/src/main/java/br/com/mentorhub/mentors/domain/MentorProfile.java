@@ -28,6 +28,7 @@ public class MentorProfile {
     private BigDecimal ratingAvg;
     private int ratingCount;
     private boolean active;
+    private UUID institutionId;
     private final Instant createdAt;
     private Instant updatedAt;
 
@@ -48,6 +49,7 @@ public class MentorProfile {
             BigDecimal ratingAvg,
             int ratingCount,
             boolean active,
+            UUID institutionId,
             Instant createdAt,
             Instant updatedAt
     ) {
@@ -67,6 +69,7 @@ public class MentorProfile {
         this.ratingAvg = Objects.requireNonNull(ratingAvg);
         this.ratingCount = ratingCount;
         this.active = active;
+        this.institutionId = institutionId;
         this.createdAt = Objects.requireNonNull(createdAt);
         this.updatedAt = Objects.requireNonNull(updatedAt);
     }
@@ -90,6 +93,7 @@ public class MentorProfile {
                 BigDecimal.ZERO,
                 0,
                 true,
+                null,
                 now,
                 now
         );
@@ -115,6 +119,34 @@ public class MentorProfile {
             Instant createdAt,
             Instant updatedAt
     ) {
+        return restore(
+                id, userId, headline, bio, yearsExperience, photoUrl, linkedinUrl, githubUrl,
+                sessionPrice, modality, skills, technologies, verified, ratingAvg, ratingCount, active,
+                null, createdAt, updatedAt
+        );
+    }
+
+    public static MentorProfile restore(
+            UUID id,
+            UUID userId,
+            String headline,
+            String bio,
+            Integer yearsExperience,
+            String photoUrl,
+            String linkedinUrl,
+            String githubUrl,
+            BigDecimal sessionPrice,
+            MentorshipModality modality,
+            Set<String> skills,
+            Set<String> technologies,
+            boolean verified,
+            BigDecimal ratingAvg,
+            int ratingCount,
+            boolean active,
+            UUID institutionId,
+            Instant createdAt,
+            Instant updatedAt
+    ) {
         return new MentorProfile(
                 id,
                 userId,
@@ -132,9 +164,26 @@ public class MentorProfile {
                 ratingAvg,
                 ratingCount,
                 active,
+                institutionId,
                 createdAt,
                 updatedAt
         );
+    }
+
+    public void attachToInstitution(UUID institutionId, String specialty) {
+        if (this.institutionId != null && !this.institutionId.equals(institutionId)) {
+            throw new BusinessException("MENTOR_ALREADY_LINKED", "Este mentor já está vinculado a uma instituição");
+        }
+        this.institutionId = Objects.requireNonNull(institutionId);
+        if ((headline == null || headline.isBlank()) && specialty != null && !specialty.isBlank()) {
+            this.headline = specialty.trim();
+        }
+        this.updatedAt = Instant.now();
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
+        this.updatedAt = Instant.now();
     }
 
     public void update(
@@ -253,6 +302,10 @@ public class MentorProfile {
 
     public boolean isActive() {
         return active;
+    }
+
+    public UUID getInstitutionId() {
+        return institutionId;
     }
 
     public Instant getCreatedAt() {

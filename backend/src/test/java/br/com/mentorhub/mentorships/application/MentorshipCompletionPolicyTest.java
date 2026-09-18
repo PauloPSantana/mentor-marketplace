@@ -163,4 +163,32 @@ class MentorshipCompletionPolicyTest {
         assertTrue(progress.paymentSettled());
         assertTrue(progress.canComplete());
     }
+
+    @Test
+    void shouldAllowCompleteAssignedMentorshipWithoutProductWhenNoScheduledSessions() {
+        Mentorship mentorship = Mentorship.assign(
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                "Mentoria de Carreira",
+                UUID.randomUUID()
+        );
+        when(mentorshipSessionRepository.countByMentorshipIdAndStatusIn(
+                mentorship.getId(),
+                List.of(MentorshipSessionStatus.COMPLETED)
+        )).thenReturn(1L);
+        when(mentorshipSessionRepository.countByMentorshipIdAndStatusIn(
+                mentorship.getId(),
+                List.of(MentorshipSessionStatus.SCHEDULED)
+        )).thenReturn(0L);
+
+        MentorshipProgress progress = policy.progress(mentorship);
+
+        assertFalse(progress.paymentRequired());
+        assertTrue(progress.paymentSettled());
+        assertEquals(0, progress.requiredSessions());
+        assertTrue(progress.canComplete());
+        policy.requireReady(mentorship);
+    }
 }

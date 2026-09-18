@@ -27,4 +27,12 @@ public interface MentorshipRepository {
     List<Mentorship> findByMentorUserId(UUID mentorUserId);
 
     List<Mentorship> findByMenteeUserId(UUID menteeUserId);
+
+    List<Mentorship> findByMentorUserIdIn(Collection<UUID> mentorUserIds);
+
+    boolean existsOpenByMentorUserIdAndMenteeUserId(UUID mentorUserId, UUID menteeUserId);
+
+    Page<Mentorship> findByInstitutionId(UUID institutionId, MentorshipStatus status, Pageable pageable);
+
+    List<Mentorship> findByInstitutionId(UUID institutionId);
 }

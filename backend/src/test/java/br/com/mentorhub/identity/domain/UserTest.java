@@ -20,6 +20,12 @@ class UserTest {
     }
 
     @Test
+    void shouldRegisterInstitution() {
+        User user = User.register("Instituto", "gestor@email.com", "hash", UserRole.INSTITUTION);
+        assertEquals(UserRole.INSTITUTION, user.getRole());
+    }
+
+    @Test
     void shouldRejectPublicAdminRegistration() {
         assertThrows(
                 BusinessException.class,

@@ -14,6 +14,8 @@ public class Mentorship {
     private final UUID mentorProfileId;
     private final UUID mentorUserId;
     private final UUID productId;
+    private final UUID institutionId;
+    private final String program;
     private final MentorshipStatus status;
     private final Instant startedAt;
     private final Instant pausedAt;
@@ -30,6 +32,8 @@ public class Mentorship {
             UUID mentorProfileId,
             UUID mentorUserId,
             UUID productId,
+            UUID institutionId,
+            String program,
             MentorshipStatus status,
             Instant startedAt,
             Instant pausedAt,
@@ -40,11 +44,13 @@ public class Mentorship {
             Instant updatedAt
     ) {
         this.id = Objects.requireNonNull(id);
-        this.enrollmentId = Objects.requireNonNull(enrollmentId);
+        this.enrollmentId = enrollmentId;
         this.menteeUserId = Objects.requireNonNull(menteeUserId);
         this.mentorProfileId = Objects.requireNonNull(mentorProfileId);
         this.mentorUserId = Objects.requireNonNull(mentorUserId);
-        this.productId = Objects.requireNonNull(productId);
+        this.productId = productId;
+        this.institutionId = institutionId;
+        this.program = normalizeProgram(program);
         this.status = Objects.requireNonNull(status);
         this.startedAt = Objects.requireNonNull(startedAt);
         this.pausedAt = pausedAt;
@@ -66,11 +72,45 @@ public class Mentorship {
         Instant now = Instant.now();
         return new Mentorship(
                 UUID.randomUUID(),
-                enrollmentId,
+                Objects.requireNonNull(enrollmentId),
                 menteeUserId,
                 mentorProfileId,
                 mentorUserId,
-                productId,
+                Objects.requireNonNull(productId),
+                null,
+                null,
+                MentorshipStatus.ACTIVE,
+                now,
+                null,
+                null,
+                null,
+                actorUserId == null ? mentorUserId : actorUserId,
+                now,
+                now
+        );
+    }
+
+    public static Mentorship assign(
+            UUID institutionId,
+            UUID mentorProfileId,
+            UUID mentorUserId,
+            UUID menteeUserId,
+            String program,
+            UUID actorUserId
+    ) {
+        if (mentorUserId.equals(menteeUserId)) {
+            throw new BusinessException("INVALID_MENTORSHIP", "O mentor não pode ser vinculado a si mesmo");
+        }
+        Instant now = Instant.now();
+        return new Mentorship(
+                UUID.randomUUID(),
+                null,
+                menteeUserId,
+                mentorProfileId,
+                mentorUserId,
+                null,
+                institutionId,
+                program,
                 MentorshipStatus.ACTIVE,
                 now,
                 null,
@@ -98,6 +138,44 @@ public class Mentorship {
             Instant createdAt,
             Instant updatedAt
     ) {
+        return restore(
+                id,
+                enrollmentId,
+                menteeUserId,
+                mentorProfileId,
+                mentorUserId,
+                productId,
+                null,
+                null,
+                status,
+                startedAt,
+                pausedAt,
+                completedAt,
+                cancelledAt,
+                statusChangedByUserId,
+                createdAt,
+                updatedAt
+        );
+    }
+
+    public static Mentorship restore(
+            UUID id,
+            UUID enrollmentId,
+            UUID menteeUserId,
+            UUID mentorProfileId,
+            UUID mentorUserId,
+            UUID productId,
+            UUID institutionId,
+            String program,
+            MentorshipStatus status,
+            Instant startedAt,
+            Instant pausedAt,
+            Instant completedAt,
+            Instant cancelledAt,
+            UUID statusChangedByUserId,
+            Instant createdAt,
+            Instant updatedAt
+    ) {
         return new Mentorship(
                 id,
                 enrollmentId,
@@ -105,6 +183,8 @@ public class Mentorship {
                 mentorProfileId,
                 mentorUserId,
                 productId,
+                institutionId,
+                program,
                 status,
                 startedAt,
                 pausedAt,
@@ -122,10 +202,7 @@ public class Mentorship {
             throw new BusinessException("INVALID_MENTORSHIP_STATUS", "Somente mentorias ativas podem ser pausadas");
         }
         Instant now = Instant.now();
-        return restore(
-                id, enrollmentId, menteeUserId, mentorProfileId, mentorUserId, productId,
-                MentorshipStatus.PAUSED, startedAt, now, completedAt, cancelledAt, actorUserId, createdAt, now
-        );
+        return copy(MentorshipStatus.PAUSED, startedAt, now, completedAt, cancelledAt, actorUserId, now);
     }
 
     public Mentorship resume(UUID actorUserId) {
@@ -133,10 +210,7 @@ public class Mentorship {
             throw new BusinessException("INVALID_MENTORSHIP_STATUS", "Somente mentorias pausadas podem ser retomadas");
         }
         Instant now = Instant.now();
-        return restore(
-                id, enrollmentId, menteeUserId, mentorProfileId, mentorUserId, productId,
-                MentorshipStatus.ACTIVE, startedAt, pausedAt, completedAt, cancelledAt, actorUserId, createdAt, now
-        );
+        return copy(MentorshipStatus.ACTIVE, startedAt, pausedAt, completedAt, cancelledAt, actorUserId, now);
     }
 
     public Mentorship complete(UUID actorUserId) {
@@ -145,18 +219,41 @@ public class Mentorship {
         }
         requireMutable();
         Instant now = Instant.now();
-        return restore(
-                id, enrollmentId, menteeUserId, mentorProfileId, mentorUserId, productId,
-                MentorshipStatus.COMPLETED, startedAt, pausedAt, now, cancelledAt, actorUserId, createdAt, now
-        );
+        return copy(MentorshipStatus.COMPLETED, startedAt, pausedAt, now, cancelledAt, actorUserId, now);
     }
 
     public Mentorship cancel(UUID actorUserId) {
         requireMutable();
         Instant now = Instant.now();
+        return copy(MentorshipStatus.CANCELLED, startedAt, pausedAt, completedAt, now, actorUserId, now);
+    }
+
+    private Mentorship copy(
+            MentorshipStatus nextStatus,
+            Instant nextStartedAt,
+            Instant nextPausedAt,
+            Instant nextCompletedAt,
+            Instant nextCancelledAt,
+            UUID actorUserId,
+            Instant nextUpdatedAt
+    ) {
         return restore(
-                id, enrollmentId, menteeUserId, mentorProfileId, mentorUserId, productId,
-                MentorshipStatus.CANCELLED, startedAt, pausedAt, completedAt, now, actorUserId, createdAt, now
+                id,
+                enrollmentId,
+                menteeUserId,
+                mentorProfileId,
+                mentorUserId,
+                productId,
+                institutionId,
+                program,
+                nextStatus,
+                nextStartedAt,
+                nextPausedAt,
+                nextCompletedAt,
+                nextCancelledAt,
+                actorUserId,
+                createdAt,
+                nextUpdatedAt
         );
     }
 
@@ -176,8 +273,18 @@ public class Mentorship {
         return status == MentorshipStatus.ACTIVE;
     }
 
+    public boolean isOpen() {
+        return status == MentorshipStatus.PENDING
+                || status == MentorshipStatus.ACTIVE
+                || status == MentorshipStatus.PAUSED;
+    }
+
     public boolean isMutable() {
         return status == MentorshipStatus.ACTIVE || status == MentorshipStatus.PAUSED;
+    }
+
+    public boolean isMarketplace() {
+        return productId != null;
     }
 
     private void requireMutable() {
@@ -187,6 +294,20 @@ public class Mentorship {
         if (status == MentorshipStatus.CANCELLED) {
             throw new BusinessException("INVALID_MENTORSHIP_STATUS", "Mentoria cancelada não pode ser reativada");
         }
+        if (status == MentorshipStatus.PENDING) {
+            throw new BusinessException("INVALID_MENTORSHIP_STATUS", "Mentoria pendente ainda não pode mudar de estado");
+        }
+    }
+
+    private static String normalizeProgram(String program) {
+        if (program == null || program.isBlank()) {
+            return null;
+        }
+        String trimmed = program.trim();
+        if (trimmed.length() > 160) {
+            throw new BusinessException("INVALID_PROGRAM", "Programa deve ter no máximo 160 caracteres");
+        }
+        return trimmed;
     }
 
     public UUID getId() {
@@ -213,6 +334,14 @@ public class Mentorship {
         return productId;
     }
 
+    public UUID getInstitutionId() {
+        return institutionId;
+    }
+
+    public String getProgram() {
+        return program;
+    }
+
     public MentorshipStatus getStatus() {
         return status;
     }
@@ -231,6 +360,10 @@ public class Mentorship {
 
     public Instant getCancelledAt() {
         return cancelledAt;
+    }
+
+    public Instant getEndedAt() {
+        return completedAt != null ? completedAt : cancelledAt;
     }
 
     public UUID getStatusChangedByUserId() {

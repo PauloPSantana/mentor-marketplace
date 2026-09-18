@@ -6,6 +6,7 @@ import br.com.mentorhub.mentorships.application.SessionCompletedEvent;
 import br.com.mentorhub.mentorships.application.SessionCreatedEvent;
 import br.com.mentorhub.mentorships.application.SessionNoShowEvent;
 import br.com.mentorhub.mentorships.application.SessionReminderEvent;
+import br.com.mentorhub.mentorships.application.SessionRescheduledEvent;
 import br.com.mentorhub.notifications.domain.NotificationType;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
@@ -40,6 +41,11 @@ public class CreateNotificationOnMentorshipSession {
     @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
     public void handleNoShow(SessionNoShowEvent event) {
         notifyBoth(event.mentorUserId(), event.menteeUserId(), event.actorUserId(), NotificationType.SESSION_NO_SHOW);
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
+    public void handleRescheduled(SessionRescheduledEvent event) {
+        notifyBoth(event.mentorUserId(), event.menteeUserId(), event.actorUserId(), NotificationType.SESSION_RESCHEDULED);
     }
 
     @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)

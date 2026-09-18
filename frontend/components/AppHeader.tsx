@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { agendaPath } from "@/lib/dashboard";
 import {
   AUTH_EVENT,
   clearAuthSession,
@@ -85,7 +86,8 @@ export function AppHeader() {
           <ThemeToggle />
           <Link href="/ajuda">Ajuda</Link>
           {user ? <Link href="/feed">Feed</Link> : null}
-          {user ? <Link href="/agenda">Agenda</Link> : null}
+          {user ? <Link href={agendaPath(user.role)}>Agenda</Link> : null}
+          {user ? <Link href="/grupos">Grupos</Link> : null}
           {!ready ? null : user ? (
             <>
               <Link href="/notifications" className="notification-link">

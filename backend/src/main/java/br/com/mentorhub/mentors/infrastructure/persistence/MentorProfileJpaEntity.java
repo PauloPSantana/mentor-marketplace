@@ -75,6 +75,9 @@ public class MentorProfileJpaEntity {
     @Column(nullable = false)
     private boolean active;
 
+    @Column(name = "institution_id")
+    private UUID institutionId;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -210,6 +213,14 @@ public class MentorProfileJpaEntity {
 
     public void setActive(boolean active) {
         this.active = active;
+    }
+
+    public UUID getInstitutionId() {
+        return institutionId;
+    }
+
+    public void setInstitutionId(UUID institutionId) {
+        this.institutionId = institutionId;
     }
 
     public Instant getCreatedAt() {

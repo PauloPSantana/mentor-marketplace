@@ -50,6 +50,7 @@ public class CreatePostService {
             headline = switch (user.getRole()) {
                 case MENTOR -> "Mentor";
                 case MENTEE -> "Mentorado";
+                case INSTITUTION -> "Instituição";
                 case ADMIN -> "Admin";
             };
         }

@@ -80,6 +80,39 @@ class MentorshipTest {
         assertEquals(MentorshipStatus.ACTIVE, paused.resume(actor).getStatus());
     }
 
+    @Test
+    void shouldAssignInstitutionMentorshipWithoutProduct() {
+        UUID institutionId = UUID.randomUUID();
+        UUID mentorProfileId = UUID.randomUUID();
+        UUID mentorUserId = UUID.randomUUID();
+        UUID menteeUserId = UUID.randomUUID();
+
+        Mentorship mentorship = Mentorship.assign(
+                institutionId,
+                mentorProfileId,
+                mentorUserId,
+                menteeUserId,
+                "Mentoria de Tecnologia",
+                mentorUserId
+        );
+
+        assertEquals(MentorshipStatus.ACTIVE, mentorship.getStatus());
+        assertEquals(institutionId, mentorship.getInstitutionId());
+        assertEquals("Mentoria de Tecnologia", mentorship.getProgram());
+        assertNull(mentorship.getEnrollmentId());
+        assertNull(mentorship.getProductId());
+        assertFalse(mentorship.isMarketplace());
+        assertTrue(mentorship.isOpen());
+        assertThrows(BusinessException.class, () -> Mentorship.assign(
+                institutionId,
+                mentorProfileId,
+                mentorUserId,
+                mentorUserId,
+                "Mentoria de Tecnologia",
+                mentorUserId
+        ));
+    }
+
     private Mentorship sample() {
         return Mentorship.start(
                 UUID.randomUUID(),

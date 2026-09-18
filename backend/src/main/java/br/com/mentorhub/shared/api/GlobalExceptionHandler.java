@@ -1,5 +1,6 @@
 package br.com.mentorhub.shared.api;
 
+import br.com.mentorhub.integration.google.GoogleNotConfiguredException;
 import br.com.mentorhub.shared.exception.BusinessException;
 import br.com.mentorhub.shared.exception.ConflictException;
 import br.com.mentorhub.shared.exception.NotFoundException;
@@ -79,6 +80,14 @@ public class GlobalExceptionHandler {
                 request.getRequestURI(),
                 List.of()
         );
+    }
+
+    @ExceptionHandler(GoogleNotConfiguredException.class)
+    public ResponseEntity<ApiErrorResponse> handleGoogleNotConfigured(
+            GoogleNotConfiguredException ex,
+            HttpServletRequest request
+    ) {
+        return build(HttpStatus.BAD_REQUEST, "GOOGLE_NOT_CONFIGURED", ex.getMessage(), request.getRequestURI(), List.of());
     }
 
     @ExceptionHandler(Exception.class)

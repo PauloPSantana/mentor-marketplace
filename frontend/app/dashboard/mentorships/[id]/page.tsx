@@ -2,11 +2,14 @@
 
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { AgendaList } from "@/components/mentorships/AgendaList";
+import { StudyPlanPanel } from "@/components/mentorships/StudyPlanPanel";
 import { HelpTooltip } from "@/components/help/HelpTooltip";
 import { apiErrorMessage } from "@/lib/api";
 import { getStoredUser } from "@/lib/auth";
+import { getGoogleStatus } from "@/lib/google";
+import { getZoomStatus } from "@/lib/zoom";
 import {
   cancelMentorship,
   completeMentorship,
@@ -14,6 +17,7 @@ import {
   formatSessionDate,
   getMentorshipRelationship,
   listMentorshipSessions,
+  meetingProviderLabel,
   mentorshipStatusLabel,
   type MentorshipRelationship,
   type MentorshipSession
@@ -27,10 +31,12 @@ import {
   type Payment
 } from "@/lib/payments";
 import { createMentorshipReview, listMentorshipReviews, type Review } from "@/lib/reviews";
+import { bookMentorSlot, getMentorAvailability, type MentorAvailability } from "@/lib/availability";
 
 export default function MentorshipDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const currentUser = getStoredUser();
   const userId = currentUser?.id;
   const [mentorship, setMentorship] = useState<MentorshipRelationship | null>(null);
@@ -41,12 +47,25 @@ export default function MentorshipDetailPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [paying, setPaying] = useState(false);
-  const [scheduledAt, setScheduledAt] = useState("");
+  const [scheduledDate, setScheduledDate] = useState("");
+  const [scheduledTime, setScheduledTime] = useState("19:00");
   const [durationMinutes, setDurationMinutes] = useState(60);
+  const [sessionTitle, setSessionTitle] = useState("");
+  const [meetingProvider, setMeetingProvider] = useState<"GOOGLE_MEET" | "ZOOM" | "MANUAL">("GOOGLE_MEET");
   const [meetingUrl, setMeetingUrl] = useState("");
+  const [recordingConsent, setRecordingConsent] = useState(false);
   const [notes, setNotes] = useState("");
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
+  const [lastCreated, setLastCreated] = useState<MentorshipSession | null>(null);
+  const [availability, setAvailability] = useState<MentorAvailability | null>(null);
+  const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+  const requestedTab = searchParams.get("tab");
+  const [tab, setTab] = useState<"visao" | "sessoes" | "plano" | "tarefas" | "questionarios" | "materiais" | "evolucao">(
+    requestedTab === "plano" || requestedTab === "tarefas" || requestedTab === "questionarios" || requestedTab === "materiais" || requestedTab === "sessoes" || requestedTab === "evolucao"
+      ? requestedTab
+      : "visao"
+  );
 
   const isMentor = currentUser?.id === mentorship?.mentor.id || currentUser?.role === "ADMIN";
   const isMentee = currentUser?.id === mentorship?.mentee.id;
@@ -76,6 +95,30 @@ export default function MentorshipDetailPage() {
       .finally(() => setLoading(false));
   }, [params.id, router, userId]);
 
+  useEffect(() => {
+    if (!mentorship) {
+      return;
+    }
+    getMentorAvailability(mentorship.mentorProfileId)
+      .then(setAvailability)
+      .catch(() => setAvailability(null));
+  }, [mentorship]);
+
+  useEffect(() => {
+    if (!isMentor) {
+      return;
+    }
+    Promise.all([getGoogleStatus().catch(() => null), getZoomStatus().catch(() => null)]).then(([google, zoom]) => {
+      if (google?.connected) {
+        setMeetingProvider("GOOGLE_MEET");
+      } else if (zoom?.connected || zoom?.accountMeetingsEnabled) {
+        setMeetingProvider("ZOOM");
+      } else {
+        setMeetingProvider("MANUAL");
+      }
+    });
+  }, [isMentor]);
+
   const other = useMemo(() => {
     if (!mentorship || !currentUser) return null;
     return currentUser.id === mentorship.mentor.id ? mentorship.mentee : mentorship.mentor;
@@ -90,6 +133,30 @@ export default function MentorshipDetailPage() {
     setPayments(charges);
   }
 
+  async function onBookSlot(startAt: string) {
+    if (!mentorship) return;
+    setError(null);
+    setSaving(true);
+    setSelectedSlot(startAt);
+    try {
+      const created = await bookMentorSlot(mentorship.mentorProfileId, {
+        mentorshipId: mentorship.id,
+        startAt
+      });
+      setSessions((current) => [...current, created].sort((a, b) => a.scheduledAt.localeCompare(b.scheduledAt)));
+      setLastCreated(created);
+      setSelectedSlot(null);
+      const refreshed = await getMentorAvailability(mentorship.mentorProfileId);
+      setAvailability(refreshed);
+      await refreshRelationship();
+    } catch (err) {
+      setError(apiErrorMessage(err, "Este horário não está mais disponível."));
+      getMentorAvailability(mentorship.mentorProfileId).then(setAvailability).catch(() => undefined);
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function onCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!mentorship) return;
@@ -97,14 +164,19 @@ export default function MentorshipDetailPage() {
     setSaving(true);
     try {
       const created = await createMentorshipSession(mentorship.id, {
-        scheduledAt: new Date(scheduledAt).toISOString(),
+        scheduledAt: new Date(`${scheduledDate}T${scheduledTime}`).toISOString(),
         durationMinutes,
-        meetingUrl,
-        notes
+        meetingUrl: meetingProvider === "MANUAL" ? meetingUrl : "",
+        notes,
+        recordingConsent: meetingProvider === "ZOOM" ? recordingConsent : false,
+        meetingProvider: meetingProvider === "MANUAL" ? null : meetingProvider,
+        title: sessionTitle || mentorship.serviceName
       });
       setSessions((current) => [...current, created].sort((a, b) => a.scheduledAt.localeCompare(b.scheduledAt)));
-      setScheduledAt("");
+      setLastCreated(created);
+      setScheduledDate("");
       setMeetingUrl("");
+      setRecordingConsent(false);
       setNotes("");
       await refreshRelationship();
     } catch (err) {
@@ -183,7 +255,7 @@ export default function MentorshipDetailPage() {
   return (
     <main className="container" style={{ padding: "3rem 0", maxWidth: 760 }}>
       <p className="post-meta">
-        <Link href="/agenda">Agenda</Link>
+        <Link href={currentUser?.role === "MENTOR" ? "/dashboard/mentor" : "/dashboard/mentorado"}>Minha Mentoria</Link>
       </p>
       <h1>{mentorship.serviceName}</h1>
       <p>
@@ -197,11 +269,101 @@ export default function MentorshipDetailPage() {
         {mentorship.scheduledSessions > 0 ? ` • ${mentorship.scheduledSessions} agendada(s)` : ""}
       </p>
       {mentorship.nextSession ? (
-        <p className="post-meta">Próxima sessão: {formatSessionDate(mentorship.nextSession.scheduledAt)}</p>
+        <div className="enrollment-section" style={{ marginTop: "1rem" }}>
+          <h2>Próxima mentoria</h2>
+          <p className="enrollment-title">{mentorship.serviceName}</p>
+          <p className="post-meta">{formatSessionDate(mentorship.nextSession.scheduledAt)}</p>
+          <p className="post-meta">
+            {isMentee ? `Mentor: ${mentorship.mentor.name}` : `Mentorado: ${mentorship.mentee.name}`}
+          </p>
+          {mentorship.nextSession.meetingProvider ? (
+            <p className="post-meta">{meetingProviderLabel(mentorship.nextSession.meetingProvider)}</p>
+          ) : null}
+          {mentorship.nextSession.meetingUrl && mentorship.nextSession.status === "SCHEDULED" ? (
+            <p>
+              <a className="btn" href={mentorship.nextSession.meetingUrl} target="_blank" rel="noreferrer">
+                Entrar na reunião
+              </a>
+            </p>
+          ) : null}
+        </div>
       ) : null}
       {error ? <p className="error">{error}</p> : null}
 
-      {mentorship.paymentRequired ? (
+      <nav className="classroom-tabs" aria-label="Minha Mentoria">
+        <button className={`classroom-tab${tab === "visao" ? " active" : ""}`} type="button" onClick={() => setTab("visao")}>
+          Visão Geral
+        </button>
+        <button className={`classroom-tab${tab === "sessoes" ? " active" : ""}`} type="button" onClick={() => setTab("sessoes")}>
+          Sessões
+        </button>
+        <button className={`classroom-tab${tab === "plano" ? " active" : ""}`} type="button" onClick={() => setTab("plano")}>
+          Plano de Estudos
+        </button>
+        <button className={`classroom-tab${tab === "tarefas" ? " active" : ""}`} type="button" onClick={() => setTab("tarefas")}>
+          Tarefas
+        </button>
+        <button className={`classroom-tab${tab === "questionarios" ? " active" : ""}`} type="button" onClick={() => setTab("questionarios")}>
+          Questionários
+        </button>
+        <button className={`classroom-tab${tab === "materiais" ? " active" : ""}`} type="button" onClick={() => setTab("materiais")}>
+          Materiais
+        </button>
+        <button className={`classroom-tab${tab === "evolucao" ? " active" : ""}`} type="button" onClick={() => setTab("evolucao")}>
+          Evolução
+        </button>
+      </nav>
+
+      {tab === "plano" ? (
+        <StudyPlanPanel
+          mentorshipId={mentorship.id}
+          menteeName={mentorship.mentee.name}
+          isMentor={Boolean(isMentor)}
+          isMentee={Boolean(isMentee)}
+        />
+      ) : null}
+      {tab === "tarefas" ? (
+        <StudyPlanPanel
+          mentorshipId={mentorship.id}
+          menteeName={mentorship.mentee.name}
+          isMentor={Boolean(isMentor)}
+          isMentee={Boolean(isMentee)}
+          mode="tasks"
+        />
+      ) : null}
+      {tab === "materiais" ? (
+        <StudyPlanPanel
+          mentorshipId={mentorship.id}
+          menteeName={mentorship.mentee.name}
+          isMentor={Boolean(isMentor)}
+          isMentee={Boolean(isMentee)}
+          mode="materials"
+        />
+      ) : null}
+      {tab === "evolucao" ? (
+        <StudyPlanPanel
+          mentorshipId={mentorship.id}
+          menteeName={mentorship.mentee.name}
+          isMentor={Boolean(isMentor)}
+          isMentee={Boolean(isMentee)}
+          mode="progress"
+        />
+      ) : null}
+      {tab === "questionarios" ? (
+        <section className="enrollment-section">
+          <h2>Questionários</h2>
+          <p className="post-meta">Em breve: diagnósticos, perguntas e respostas do mentorado.</p>
+        </section>
+      ) : null}
+
+      {tab === "visao" || tab === "sessoes" ? (
+        <>
+      {tab === "visao" ? (
+        <p className="post-meta">
+          Use o Plano de Estudos para montar a trilha. O mentorado marca o que já concluiu e o progresso aparece em Evolução.
+        </p>
+      ) : null}
+      {tab === "visao" && mentorship.paymentRequired ? (
         <section className="enrollment-section">
           <h2 className="help-heading">
             Pagamento
@@ -238,15 +400,64 @@ export default function MentorshipDetailPage() {
         </section>
       ) : null}
 
-      {canSchedule ? (
+      {tab === "sessoes" && canSchedule && isMentee ? (
+        <section className="enrollment-section" style={{ margin: "1.5rem 0" }}>
+          <h2>Calendário</h2>
+          <p className="post-meta">Escolha um horário livre. Compromissos pessoais do mentor não aparecem.</p>
+          {availability && availability.days.length > 0 ? (
+            availability.days.map((day) => (
+              <div key={day.date} style={{ marginTop: "1rem" }}>
+                <p className="enrollment-title">
+                  {new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit" }).format(new Date(`${day.date}T12:00:00`))}
+                </p>
+                {day.slots.length === 0 ? (
+                  <p className="post-meta">Sem disponibilidade</p>
+                ) : (
+                  <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                    {day.slots.map((slot) => (
+                      <button
+                        key={slot.startAt}
+                        className="btn secondary"
+                        type="button"
+                        disabled={saving}
+                        onClick={() => void onBookSlot(slot.startAt)}
+                      >
+                        {selectedSlot === slot.startAt && saving ? "Reservando..." : slot.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))
+          ) : (
+            <p className="post-meta">O mentor ainda não definiu horários disponíveis.</p>
+          )}
+        </section>
+      ) : null}
+
+      {tab === "sessoes" && canSchedule && isMentor ? (
         <form className="card-form" onSubmit={onCreate} style={{ display: "grid", gap: "0.75rem", margin: "1.5rem 0" }}>
-          <h2>Agendar sessão</h2>
+          <h2>Nova sessão</h2>
+          <p className="post-meta">Mentorado: {mentorship.mentee.name}</p>
           <label>
-            Data e horário
-            <input className="input" type="datetime-local" required value={scheduledAt} onChange={(event) => setScheduledAt(event.target.value)} />
+            Título
+            <input
+              className="input"
+              value={sessionTitle}
+              onChange={(event) => setSessionTitle(event.target.value)}
+              placeholder={mentorship.serviceName}
+            />
           </label>
           <label>
-            Duração (minutos)
+            Data
+            <input className="input" type="date" required value={scheduledDate} onChange={(event) => setScheduledDate(event.target.value)} />
+          </label>
+          <label>
+            Horário
+            <input className="input" type="time" required value={scheduledTime} onChange={(event) => setScheduledTime(event.target.value)} />
+          </label>
+          <label>
+            Duração
             <input
               className="input"
               type="number"
@@ -255,23 +466,92 @@ export default function MentorshipDetailPage() {
               value={durationMinutes}
               onChange={(event) => setDurationMinutes(Number(event.target.value))}
             />
+            <span className="post-meta">minutos</span>
           </label>
-          <label>
-            Link da reunião (opcional)
-            <input className="input" value={meetingUrl} onChange={(event) => setMeetingUrl(event.target.value)} />
-          </label>
+          <fieldset style={{ border: 0, padding: 0, margin: 0 }}>
+            <legend className="post-meta">Videoconferência</legend>
+            <label style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <input
+                type="radio"
+                name="meetingProvider"
+                checked={meetingProvider === "GOOGLE_MEET"}
+                onChange={() => setMeetingProvider("GOOGLE_MEET")}
+              />
+              Google Meet
+            </label>
+            <label style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <input
+                type="radio"
+                name="meetingProvider"
+                checked={meetingProvider === "ZOOM"}
+                onChange={() => setMeetingProvider("ZOOM")}
+              />
+              Zoom
+            </label>
+            <label style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <input
+                type="radio"
+                name="meetingProvider"
+                checked={meetingProvider === "MANUAL"}
+                onChange={() => setMeetingProvider("MANUAL")}
+              />
+              Link manual / presencial
+            </label>
+          </fieldset>
+          {meetingProvider === "MANUAL" ? (
+            <label>
+              Link da reunião (opcional)
+              <input
+                className="input"
+                value={meetingUrl}
+                onChange={(event) => setMeetingUrl(event.target.value)}
+                placeholder="Cole o link se a reunião for externa"
+              />
+            </label>
+          ) : null}
+          {meetingProvider === "ZOOM" ? (
+            <label style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <input type="checkbox" checked={recordingConsent} onChange={(event) => setRecordingConsent(event.target.checked)} />
+              Autorizo gravação da sessão no Zoom, se o plano permitir
+            </label>
+          ) : null}
           <label>
             Observações
             <textarea className="input" rows={3} maxLength={2000} value={notes} onChange={(event) => setNotes(event.target.value)} />
           </label>
           <button className="btn" type="submit" disabled={saving}>
-            {saving ? "Agendando..." : "Criar sessão"}
+            {saving ? "Agendando..." : "Agendar"}
           </button>
         </form>
-      ) : mentorship.status === "ACTIVE" && mentorship.paymentRequired && !mentorship.paymentSettled ? (
+      ) : tab === "sessoes" && mentorship.status === "ACTIVE" && mentorship.paymentRequired && !mentorship.paymentSettled ? (
         <p className="post-meta">As sessões são liberadas após a confirmação do pagamento.</p>
       ) : null}
 
+      {tab === "sessoes" && lastCreated ? (
+        <section className="enrollment-section">
+          <h2>Sessão agendada com sucesso</h2>
+          {lastCreated.meetingProvider === "GOOGLE_MEET" ? (
+            <>
+              <p className="post-meta">Google Agenda: {lastCreated.googleCalendarCreated ? "criado" : "não criado"}</p>
+              <p className="post-meta">Google Meet: {lastCreated.googleMeetCreated ? "criado" : "não criado"}</p>
+            </>
+          ) : lastCreated.meetingProvider === "ZOOM" ? (
+            <p className="post-meta">Zoom: reunião criada</p>
+          ) : (
+            <p className="post-meta">Sessão registrada na agenda do Mentor Marketplace.</p>
+          )}
+          {lastCreated.meetingUrl && lastCreated.status === "SCHEDULED" ? (
+            <p>
+              <a className="btn" href={lastCreated.meetingUrl} target="_blank" rel="noreferrer">
+                Entrar na reunião
+              </a>
+            </p>
+          ) : null}
+        </section>
+      ) : null}
+
+      {tab === "sessoes" ? (
+      <>
       <section className="enrollment-section">
         <h2>Sessões</h2>
         <AgendaList items={sessions} viewerRole={isMentor ? "MENTOR" : "MENTEE"} onChange={setSessions} />
@@ -292,8 +572,10 @@ export default function MentorshipDetailPage() {
           </ul>
         </section>
       ) : null}
+      </>
+      ) : null}
 
-      {isMentor && (mentorship.status === "ACTIVE" || mentorship.status === "PAUSED") ? (
+      {tab === "visao" && isMentor && (mentorship.status === "ACTIVE" || mentorship.status === "PAUSED") ? (
         <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginTop: "1.5rem" }}>
           {!mentorship.canComplete ? (
             <p className="post-meta">
@@ -311,7 +593,13 @@ export default function MentorshipDetailPage() {
         </div>
       ) : null}
 
-      {mentorship.status === "COMPLETED" ? (
+      {tab === "visao" && mentorship.status === "COMPLETED" && isParticipant ? (
+        <p className="post-meta" style={{ marginTop: "1rem" }}>
+          Defina a próxima meta na nova mentoria ou avalie a sessão abaixo.
+        </p>
+      ) : null}
+
+      {tab === "visao" && mentorship.status === "COMPLETED" ? (
         <section className="enrollment-section">
           <h2>Histórico</h2>
           <p className="post-meta">
@@ -367,6 +655,8 @@ export default function MentorshipDetailPage() {
             </ul>
           ) : null}
         </section>
+      ) : null}
+        </>
       ) : null}
     </main>
   );

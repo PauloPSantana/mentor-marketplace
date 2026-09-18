@@ -1,6 +1,14 @@
 spring:
   application:
     name: mentorhub-api
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+  config:
+    import:
+      - optional:file:./google-local.yml
+      - optional:file:./backend/google-local.yml
+      - optional:file:./mail-local.yml
+      - optional:file:./backend/mail-local.yml
   datasource:
     url: jdbc:h2:file:./data/mentorhub;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;DB_CLOSE_DELAY=-1
     driver-class-name: org.h2.Driver
@@ -24,6 +32,21 @@ spring:
     multipart:
       max-file-size: 2MB
       max-request-size: 2MB
+  mail:
+    port: ${MAIL_PORT:587}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          ssl:
+            trust: smtp.gmail.com
+          connectiontimeout: 10000
+          timeout: 10000
+          writetimeout: 10000
+
 
 management:
   endpoints:
@@ -36,6 +59,12 @@ management:
 
 server:
   port: ${SERVER_PORT:8080}
+
+google:
+  client-id: ${GOOGLE_CLIENT_ID:}
+  client-secret: ${GOOGLE_CLIENT_SECRET:}
+  redirect-uri: ${GOOGLE_REDIRECT_URI:http://localhost:8080/api/integrations/google/callback}
+  frontend-redirect: ${GOOGLE_FRONTEND_REDIRECT:http://localhost:3000/dashboard/mentor}
 
 mentorhub:
   security:
@@ -53,8 +82,20 @@ mentorhub:
     client-secret: ${LINKEDIN_CLIENT_SECRET:}
     redirect-uri: ${LINKEDIN_REDIRECT_URI:http://localhost:8080/api/v1/auth/linkedin/callback}
     frontend-redirect: ${LINKEDIN_FRONTEND_REDIRECT:http://localhost:3000/cadastro}
+  zoom:
+    account-id: ${ZOOM_ACCOUNT_ID:}
+    client-id: ${ZOOM_CLIENT_ID:}
+    client-secret: ${ZOOM_CLIENT_SECRET:}
+    host-email: ${ZOOM_HOST_EMAIL:}
+    oauth-redirect-uri: ${ZOOM_OAUTH_REDIRECT_URI:http://localhost:8080/api/v1/zoom/callback}
+    frontend-redirect: ${ZOOM_FRONTEND_REDIRECT:http://localhost:3000/dashboard/mentor}
+    webhook-secret: ${ZOOM_WEBHOOK_SECRET:}
+    recording-enabled: ${ZOOM_RECORDING_ENABLED:false}
   uploads:
     dir: ${UPLOADS_DIR:./data/uploads}
+  frontend-base-url: ${FRONTEND_BASE_URL:http://localhost:3000}
+  mail:
+    from: ${MAIL_FROM:Mentor Marketplace <noreply@localhost>}
 
 springdoc:
   api-docs:

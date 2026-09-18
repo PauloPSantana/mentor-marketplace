@@ -37,4 +37,22 @@ public interface SpringDataMentorshipRepository extends JpaRepository<Mentorship
     List<MentorshipJpaEntity> findByMentorUserId(UUID mentorUserId);
 
     List<MentorshipJpaEntity> findByMenteeUserId(UUID menteeUserId);
+
+    List<MentorshipJpaEntity> findByMentorUserIdIn(Collection<UUID> mentorUserIds);
+
+    boolean existsByMentorUserIdAndMenteeUserIdAndStatusIn(
+            UUID mentorUserId,
+            UUID menteeUserId,
+            Collection<MentorshipStatus> statuses
+    );
+
+    Page<MentorshipJpaEntity> findByInstitutionIdOrderByStartedAtDesc(UUID institutionId, Pageable pageable);
+
+    Page<MentorshipJpaEntity> findByInstitutionIdAndStatusOrderByStartedAtDesc(
+            UUID institutionId,
+            MentorshipStatus status,
+            Pageable pageable
+    );
+
+    List<MentorshipJpaEntity> findByInstitutionId(UUID institutionId);
 }

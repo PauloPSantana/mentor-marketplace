@@ -30,6 +30,12 @@ public record RegisterRequest(
         String linkedinUrl,
 
         @Size(max = 500, message = "Foto deve ter no máximo 500 caracteres")
-        String photoUrl
+        String photoUrl,
+
+        @Size(max = 64, message = "Convite inválido")
+        String invitationToken,
+
+        @Size(max = 160, message = "Nome da instituição deve ter no máximo 160 caracteres")
+        String institutionName
 ) {
 }

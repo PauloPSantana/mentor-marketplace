@@ -1,6 +1,4 @@
-import { api } from "@/lib/api";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
+import { api, apiBaseUrl } from "@/lib/api";
 
 export type LinkedInPreview = {
   url: string;
@@ -64,7 +62,7 @@ export function getLinkedInImportedProfile(token: string): Promise<LinkedInImpor
 }
 
 export function linkedInStartUrl(): string {
-  return `${API_URL}/api/v1/auth/linkedin/start`;
+  return `${apiBaseUrl()}/api/v1/auth/linkedin/start`;
 }
 
 export function validatePassword(password: string, confirmation: string): PasswordChecks {

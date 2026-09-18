@@ -3,12 +3,17 @@ package br.com.mentorhub.mentorships.api;
 import br.com.mentorhub.mentorships.api.dto.CancelSessionRequest;
 import br.com.mentorhub.mentorships.api.dto.CompleteSessionRequest;
 import br.com.mentorhub.mentorships.api.dto.MentorshipSessionResponse;
+import br.com.mentorhub.mentorships.api.dto.RescheduleSessionRequest;
+import br.com.mentorhub.mentorships.api.dto.SessionStatsResponse;
 import br.com.mentorhub.mentorships.application.CancelSessionService;
 import br.com.mentorhub.mentorships.application.CompleteSessionService;
+import br.com.mentorhub.mentorships.application.ListSessionStatsService;
 import br.com.mentorhub.mentorships.application.MarkSessionNoShowService;
+import br.com.mentorhub.mentorships.application.RescheduleSessionService;
 import br.com.mentorhub.shared.security.SecurityUtils;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -24,15 +29,34 @@ public class MentorshipSessionController {
     private final CompleteSessionService completeSessionService;
     private final CancelSessionService cancelSessionService;
     private final MarkSessionNoShowService markSessionNoShowService;
+    private final RescheduleSessionService rescheduleSessionService;
+    private final ListSessionStatsService listSessionStatsService;
 
     public MentorshipSessionController(
             CompleteSessionService completeSessionService,
             CancelSessionService cancelSessionService,
-            MarkSessionNoShowService markSessionNoShowService
+            MarkSessionNoShowService markSessionNoShowService,
+            RescheduleSessionService rescheduleSessionService,
+            ListSessionStatsService listSessionStatsService
     ) {
         this.completeSessionService = completeSessionService;
         this.cancelSessionService = cancelSessionService;
         this.markSessionNoShowService = markSessionNoShowService;
+        this.rescheduleSessionService = rescheduleSessionService;
+        this.listSessionStatsService = listSessionStatsService;
+    }
+
+    @GetMapping("/stats")
+    public ResponseEntity<SessionStatsResponse> stats() {
+        return ResponseEntity.ok(listSessionStatsService.execute(SecurityUtils.requireCurrentUserId()));
+    }
+
+    @PatchMapping("/{id}/reschedule")
+    public ResponseEntity<MentorshipSessionResponse> reschedule(
+            @PathVariable UUID id,
+            @Valid @RequestBody RescheduleSessionRequest request
+    ) {
+        return ResponseEntity.ok(rescheduleSessionService.execute(SecurityUtils.requireCurrentUserId(), id, request));
     }
 
     @PatchMapping("/{id}/complete")

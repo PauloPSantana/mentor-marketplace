@@ -123,6 +123,7 @@ class CommentComposer {
         return switch (author.getRole()) {
             case MENTOR -> "Mentor";
             case MENTEE -> "Mentorado";
+            case INSTITUTION -> "Instituição";
             case ADMIN -> "Admin";
         };
     }

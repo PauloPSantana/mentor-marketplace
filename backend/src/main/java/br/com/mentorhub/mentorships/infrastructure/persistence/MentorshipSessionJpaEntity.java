@@ -1,6 +1,8 @@
 package br.com.mentorhub.mentorships.infrastructure.persistence;
 
+import br.com.mentorhub.mentorships.domain.MeetingProvider;
 import br.com.mentorhub.mentorships.domain.MentorshipSessionStatus;
+import br.com.mentorhub.mentorships.domain.ZoomMeetingStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -60,6 +62,29 @@ public class MentorshipSessionJpaEntity {
 
     @Column(name = "reminder_1h_sent_at")
     private Instant reminder1hSentAt;
+
+    @Column(name = "reminder_10m_sent_at")
+    private Instant reminder10mSentAt;
+
+    @Column(name = "zoom_meeting_id", length = 128)
+    private String zoomMeetingId;
+
+    @Column(name = "zoom_start_url", length = 1000)
+    private String zoomStartUrl;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "zoom_status", length = 20)
+    private ZoomMeetingStatus zoomStatus;
+
+    @Column(name = "zoom_started_at")
+    private Instant zoomStartedAt;
+
+    @Column(name = "zoom_ended_at")
+    private Instant zoomEndedAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "meeting_provider", length = 20)
+    private MeetingProvider meetingProvider;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
@@ -188,6 +213,62 @@ public class MentorshipSessionJpaEntity {
 
     public void setReminder1hSentAt(Instant reminder1hSentAt) {
         this.reminder1hSentAt = reminder1hSentAt;
+    }
+
+    public Instant getReminder10mSentAt() {
+        return reminder10mSentAt;
+    }
+
+    public void setReminder10mSentAt(Instant reminder10mSentAt) {
+        this.reminder10mSentAt = reminder10mSentAt;
+    }
+
+    public String getZoomMeetingId() {
+        return zoomMeetingId;
+    }
+
+    public void setZoomMeetingId(String zoomMeetingId) {
+        this.zoomMeetingId = zoomMeetingId;
+    }
+
+    public String getZoomStartUrl() {
+        return zoomStartUrl;
+    }
+
+    public void setZoomStartUrl(String zoomStartUrl) {
+        this.zoomStartUrl = zoomStartUrl;
+    }
+
+    public ZoomMeetingStatus getZoomStatus() {
+        return zoomStatus;
+    }
+
+    public void setZoomStatus(ZoomMeetingStatus zoomStatus) {
+        this.zoomStatus = zoomStatus;
+    }
+
+    public Instant getZoomStartedAt() {
+        return zoomStartedAt;
+    }
+
+    public void setZoomStartedAt(Instant zoomStartedAt) {
+        this.zoomStartedAt = zoomStartedAt;
+    }
+
+    public Instant getZoomEndedAt() {
+        return zoomEndedAt;
+    }
+
+    public void setZoomEndedAt(Instant zoomEndedAt) {
+        this.zoomEndedAt = zoomEndedAt;
+    }
+
+    public MeetingProvider getMeetingProvider() {
+        return meetingProvider;
+    }
+
+    public void setMeetingProvider(MeetingProvider meetingProvider) {
+        this.meetingProvider = meetingProvider;
     }
 
     public Instant getCreatedAt() {

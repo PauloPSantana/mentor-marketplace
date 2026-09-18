@@ -1,5 +1,6 @@
 package br.com.mentorhub.mentorships.api.dto;
 
+import br.com.mentorhub.mentorships.domain.MeetingProvider;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -17,6 +18,10 @@ public record CreateSessionRequest(
         @Size(max = 500, message = "Link da reunião deve ter no máximo 500 caracteres")
         String meetingUrl,
         @Size(max = 2000, message = "Observações devem ter no máximo 2000 caracteres")
-        String notes
+        String notes,
+        Boolean recordingConsent,
+        MeetingProvider meetingProvider,
+        @Size(max = 200, message = "Título deve ter no máximo 200 caracteres")
+        String title
 ) {
 }

@@ -9,6 +9,7 @@ import br.com.mentorhub.mentorships.domain.Mentorship;
 import br.com.mentorhub.mentorships.domain.MentorshipRepository;
 import br.com.mentorhub.mentorships.domain.MentorshipSession;
 import br.com.mentorhub.mentorships.domain.MentorshipSessionRepository;
+import br.com.mentorhub.scheduling.application.VideoConferenceRouter;
 import br.com.mentorhub.shared.exception.NotFoundException;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
@@ -24,6 +25,7 @@ public class CancelSessionService {
     private final MentorshipRepository mentorshipRepository;
     private final UserRepository userRepository;
     private final MentorshipRelationshipMapper mentorshipRelationshipMapper;
+    private final VideoConferenceRouter videoConferenceRouter;
     private final ApplicationEventPublisher eventPublisher;
 
     public CancelSessionService(
@@ -31,12 +33,14 @@ public class CancelSessionService {
             MentorshipRepository mentorshipRepository,
             UserRepository userRepository,
             MentorshipRelationshipMapper mentorshipRelationshipMapper,
+            VideoConferenceRouter videoConferenceRouter,
             ApplicationEventPublisher eventPublisher
     ) {
         this.mentorshipSessionRepository = mentorshipSessionRepository;
         this.mentorshipRepository = mentorshipRepository;
         this.userRepository = userRepository;
         this.mentorshipRelationshipMapper = mentorshipRelationshipMapper;
+        this.videoConferenceRouter = videoConferenceRouter;
         this.eventPublisher = eventPublisher;
     }
 
@@ -55,6 +59,13 @@ public class CancelSessionService {
         MentorshipSession saved = mentorshipSessionRepository.save(
                 session.cancel(actor.getId(), request == null ? null : request.reason())
         );
+        if (session.hasManagedMeeting()) {
+            videoConferenceRouter.delete(
+                    session.getMeetingProvider(),
+                    mentorship.getMentorUserId(),
+                    session.getExternalEventId()
+            );
+        }
         eventPublisher.publishEvent(new SessionCancelledEvent(
                 saved.getId(),
                 mentorship.getId(),
